@@ -86,31 +86,58 @@ class MavDynamics:
         for the dynamics xdot = f(x, u), returns f(x, u)
         """
         ##### TODO #####
-        
         # Extract the States
-        # north = state.item(0)
+        north = state.item(0)
+        east = state.item(1)
+        down = state.item(2)
+        u = state.item(3)
+        v = state.item(4)
+        w = state.item(5)
+        e0 = state.item(6)
+        e1 = state.item(7)
+        e2 = state.item(8)
+        e3 = state.item(9)
+        p = state.item(10)
+        q = state.item(11)
+        r = state.item(12)
+
+        phi, theta, psi = quaternion_to_euler(self._state[6:10])
 
         # Extract Forces/Moments
-        # fx = forces_moments.item(0)
+        fx = forces_moments.item(0)
+        fy = forces_moments.item(1)
+        fz = forces_moments.item(2)
+        mx = forces_moments.item(3)
+        my = forces_moments.item(4)
+        mz = forces_moments.item(5)
 
         # Position Kinematics
-        # pos_dot = 
 
+        pos_dot = np.array([
+            [ np.cos(theta) * np.cos(psi), (np.sin(phi) * np.sin(theta) * np.cos(psi) - np.cos(phi) * np.sin(psi)), (np.cos(phi) * np.sin(theta) * np.cos(psi) + np.sin(phi) * np.sin(psi))],
+            [ np.cos(theta) * np.sin(psi), (np.sin(phi) * np.sin(theta) * np.sin(psi) + np.cos(phi) * np.cos(psi)), (np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi))],
+            [-np.sin(theta),                np.sin(phi) * np.cos(theta),                                             np.cos(phi) * np.cos(theta)]
+        ]) @ np.array([[u], [v], [w]])
+        
         # Position Dynamics
-        # u_dot = 
-
+        u_dot = (r*v - q*w) * fx/mx
+        v_dot = (p*w - r*u) * fy/my
+        w_dot = (q*u - p*v) * fz/mz
 
         # rotational kinematics
-        # e0_dot =
-
+        euler_dot = np.array([[1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],
+                              [0, np.cos(phi), -np.sin(phi)],
+                              [0, np.sin(phi)/np.cos(theta), np.cos(phi)/np.cos(theta)]]) @ np.array([[p], [q], [r]])
 
         # rotatonal dynamics
         # p_dot = 
-        
+        # rotatonal dynamics
+        p_dot = (MAV.gamma1 * p * q - MAV.gamma2 * q * r) / MAV.Jx
+        q_dot = (MAV.gamma5 * p * r - MAV.gamma6 * (p**2 - r**2)) / MAV.Jy
+        r_dot = (MAV.gamma7 * p * q - MAV.gamma1 * q * r) / MAV.Jz
 
         # collect the derivative of the states
-        # x_dot = np.array([[north_dot, east_dot,... ]]).T
-        x_dot = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0]]).T
+        x_dot = np.array([[north
         return x_dot
 
     def _update_true_state(self):
