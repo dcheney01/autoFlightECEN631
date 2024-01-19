@@ -14,7 +14,7 @@ import numpy as np
 # load message types
 from message_types.msg_state import MsgState
 import parameters.aerosonde_parameters as MAV
-from tools.rotations import quaternion_to_rotation, quaternion_to_euler
+from tools.rotations import quaternion_to_rotation, quaternion_to_euler, euler_to_quaternion
 
 class MavDynamics:
     def __init__(self, Ts):
@@ -87,57 +87,72 @@ class MavDynamics:
         """
         ##### TODO #####
         # Extract the States
-        north = state.item(0)
-        east = state.item(1)
-        down = state.item(2)
         u = state.item(3)
         v = state.item(4)
         w = state.item(5)
-        e0 = state.item(6)
-        e1 = state.item(7)
-        e2 = state.item(8)
-        e3 = state.item(9)
         p = state.item(10)
         q = state.item(11)
         r = state.item(12)
 
-        phi, theta, psi = quaternion_to_euler(self._state[6:10])
+        normalized_quaternion = state[6:10]/np.linalg.norm(state[6:10])
+        phi, theta, psi = quaternion_to_euler(normalized_quaternion)
 
         # Extract Forces/Moments
         fx = forces_moments.item(0)
         fy = forces_moments.item(1)
         fz = forces_moments.item(2)
-        mx = forces_moments.item(3)
-        my = forces_moments.item(4)
-        mz = forces_moments.item(5)
+        l = forces_moments.item(3)
+        m = forces_moments.item(4)
+        n = forces_moments.item(5)
 
         # Position Kinematics
-
-        pos_dot = np.array([
-            [ np.cos(theta) * np.cos(psi), (np.sin(phi) * np.sin(theta) * np.cos(psi) - np.cos(phi) * np.sin(psi)), (np.cos(phi) * np.sin(theta) * np.cos(psi) + np.sin(phi) * np.sin(psi))],
-            [ np.cos(theta) * np.sin(psi), (np.sin(phi) * np.sin(theta) * np.sin(psi) + np.cos(phi) * np.cos(psi)), (np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi))],
-            [-np.sin(theta),                np.sin(phi) * np.cos(theta),                                             np.cos(phi) * np.cos(theta)]
-        ]) @ np.array([[u], [v], [w]])
+        cphi = np.cos(phi)
+        sphi = np.sin(phi)
+        cpsi = np.cos(psi)
+        spsi = np.sin(psi)
+        tt = np.tan(theta)
+        ct = np.cos(theta)
+        st = np.sin(theta)
+        
+        pn_dot = u*ct*cpsi + v*(sphi*st*cpsi - cphi*spsi) + w*(st*cphi*cpsi + sphi*spsi)
+        pe_dot = u*ct*spsi + v*(sphi*st*spsi + cphi*cpsi) + w*(st*cphi*spsi - sphi*cpsi)
+        pd_dot = -u*st + v*sphi*ct + w*cphi*ct
         
         # Position Dynamics
-        u_dot = (r*v - q*w) * fx/mx
-        v_dot = (p*w - r*u) * fy/my
-        w_dot = (q*u - p*v) * fz/mz
+        u_dot = (r*v - q*w) + fx/MAV.mass
+        v_dot = (p*w - r*u) + fy/MAV.mass
+        w_dot = (q*u - p*v) + fz/MAV.mass
 
         # rotational kinematics
-        euler_dot = np.array([[1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],
-                              [0, np.cos(phi), -np.sin(phi)],
-                              [0, np.sin(phi)/np.cos(theta), np.cos(phi)/np.cos(theta)]]) @ np.array([[p], [q], [r]])
+        phi_dot = p + (q*sphi + r*cphi)*tt
+        theta_dot = q*cphi - r*sphi
+        psi_dot = (q*sphi + r*cphi)/ct
+
+        quat_dot = euler_to_quaternion(phi_dot, theta_dot, psi_dot)
+        e0_dot = quat_dot.item(0)
+        e1_dot = quat_dot.item(1)
+        e2_dot = quat_dot.item(2)
+        e3_dot = quat_dot.item(3)
 
         # rotatonal dynamics
-        # p_dot = 
-        # rotatonal dynamics
-        p_dot = (MAV.gamma1 * p * q - MAV.gamma2 * q * r) / MAV.Jx
-        q_dot = (MAV.gamma5 * p * r - MAV.gamma6 * (p**2 - r**2)) / MAV.Jy
-        r_dot = (MAV.gamma7 * p * q - MAV.gamma1 * q * r) / MAV.Jz
+        p_dot = (MAV.gamma1 * p * q - MAV.gamma2 * q * r)  + (MAV.gamma3 * l + MAV.gamma4 * n)
+        q_dot = (MAV.gamma5 * p * r - MAV.gamma6 * (p**2 - r**2)) + (m/MAV.Jy)
+        r_dot = (MAV.gamma7 * p * q - MAV.gamma1 * q * r) + (MAV.gamma4 * l + MAV.gamma8 * n)
 
         # collect the derivative of the states
-        x_dot = np.array([[north
+        x_dot = np.array([[pn_dot], 
+                          [pe_dot], 
+                          [pd_dot], 
+                          [u_dot], 
+                          [v_dot], 
+                          [w_dot], 
+                          [e0_dot],
+                          [e1_dot],
+                          [e2_dot],
+                          [e3_dot],
+                          [p_dot], 
+                          [q_dot], 
+                          [r_dot]])
         return x_dot
 
     def _update_true_state(self):

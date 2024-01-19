@@ -15,7 +15,6 @@ def quaternion_to_euler(quaternion):
     e2 = quaternion.item(2)
     e3 = quaternion.item(3)
     phi = np.arctan2(2.0 * (e0 * e1 + e2 * e3), e0**2.0 + e3**2.0 - e1**2.0 - e2**2.0)
-    # theta = np.arcsin(2.0 * (e0 * e2 - e1 * e3))
     theta = -np.pi/2.0 + np.arctan2(np.sqrt(1+2.0*(e0*e2-e1*e3)), np.sqrt(1-2.0*(e0*e2-e1*e3)))
     psi = np.arctan2(2.0 * (e0 * e3 + e1 * e2), e0**2.0 + e1**2.0 - e2**2.0 - e3**2.0)
     return phi, theta, psi
@@ -26,12 +25,11 @@ def euler_to_quaternion(phi, theta, psi):
     :param euler: Euler angle attitude in a np.matrix(phi, theta, psi)
     :return: Quaternian attitude in np.array(e0, e1, e2, e3)
     """
-
-    e0 = np.cos(psi/2.0) * np.cos(theta/2.0) * np.cos(phi/2.0) + np.sin(psi/2.0) * np.sin(theta/2.0) * np.sin(phi/2.0)
-    e1 = np.cos(psi/2.0) * np.cos(theta/2.0) * np.sin(phi/2.0) - np.sin(psi/2.0) * np.sin(theta/2.0) * np.cos(phi/2.0)
-    e2 = np.cos(psi/2.0) * np.sin(theta/2.0) * np.cos(phi/2.0) + np.sin(psi/2.0) * np.cos(theta/2.0) * np.sin(phi/2.0)
-    e3 = np.sin(psi/2.0) * np.cos(theta/2.0) * np.cos(phi/2.0) - np.cos(psi/2.0) * np.sin(theta/2.0) * np.sin(phi/2.0)
-
+    e0 = np.cos(phi/2.0)*np.cos(theta/2.0)*np.cos(psi/2.0) + np.sin(phi/2.0)*np.sin(theta/2.0)*np.sin(psi/2.0)
+    e1 = np.sin(phi/2.0)*np.cos(theta/2.0)*np.cos(psi/2.0) - np.cos(phi/2.0)*np.sin(theta/2.0)*np.sin(psi/2.0)
+    e2 = np.cos(phi/2.0)*np.sin(theta/2.0)*np.cos(psi/2.0) + np.sin(phi/2.0)*np.cos(theta/2.0)*np.sin(psi/2.0)
+    e3 = np.cos(phi/2.0)*np.cos(theta/2.0)*np.sin(psi/2.0) - np.sin(phi/2.0)*np.sin(theta/2.0)*np.cos(psi/2.0)
+    
     return np.array([[e0],[e1],[e2],[e3]])
 
 def euler_to_rotation(phi, theta, psi):

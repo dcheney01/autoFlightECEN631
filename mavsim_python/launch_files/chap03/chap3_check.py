@@ -13,9 +13,11 @@ from models.mav_dynamics import MavDynamics
 import parameters.simulation_parameters as SIM
 import parameters.aerosonde_parameters as MAV
 
-state = np.array([[5], [2], [-20], [5],
-                        [0], [0], [1], [0], [0],
-                        [0], [1], [0.5], [0], [0], [0]])
+state = np.array([[5], [2], [-20], 
+                  [5], [0], [0], 
+                  [1], [0], [0], [0], 
+                  [1], [0.5], [0], 
+                  [0], [0]])
 forces_moments = np.array([[10, 5, 0, 0, 14, 0]]).T
 mav = MavDynamics(SIM.ts_simulation)
 x_dot = mav._derivatives(state, forces_moments)
@@ -51,9 +53,11 @@ print(" ")
 # q_dot:  [12.22872247]
 # r_dot:  [-0.08413156]
 
-state = np.array([[5], [2], [-20], [0],
-                        [3], [6], [1], [.6], [0],
-                        [.2], [0], [0], [3], [0], [0]])
+state = np.array([[5], [2], [-20], 
+                  [0], [3], [6], 
+                  [1], [.6], [0], [.2], 
+                  [0], [0], [3], 
+                  [0], [0]])
 forces_moments = np.array([[10, 5, 0, 0, 14, 0]]).T
 mav = MavDynamics(SIM.ts_simulation)
 x_dot = mav._derivatives(state, forces_moments)
