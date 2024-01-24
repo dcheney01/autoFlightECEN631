@@ -24,8 +24,8 @@ from models.mav_dynamics import MavDynamics
 #quitter = QuitListener()
 
 #Running Parameters
-VIDEO = False
-PLOTS = True
+VIDEO = True
+PLOTS = False
 ANIMATION = True
 SAVE_PLOT_IMAGE = False
 
@@ -40,8 +40,8 @@ if PLOTS:
                            data_recording_period=SIM.ts_plot_record_data, time_window_length=30)
 if VIDEO is True:
     from viewers.video_writer import VideoWriter
-    video = VideoWriter(video_name="chap3_video.avi",
-                        bounding_box=(0, 0, 1000, 1000),
+    video = VideoWriter(video_name="videos/chp3/test.avi",
+                        bounding_box=(0, 0, 600, 600),
                         output_rate=SIM.ts_video)
     
 # initialize elements of the architecture
@@ -50,7 +50,7 @@ delta = MsgDelta()
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 60
+end_time = 10
 
 # main simulation loop
 print("Press 'Esc' to exit...")
@@ -58,10 +58,10 @@ while sim_time < end_time:
     # ------- vary forces and moments to check dynamics -------------
     fx = 0  # 10
     fy = 0  # 10
-    fz = 100  # 10
-    Mx = 0.1  # 0.1
-    My = 0  # 0.1
-    Mz = 0  # 0.1
+    fz = 0  # 10
+    Mx = 0.0  # 0.1
+    My = 0.  # 0.1
+    Mz = 1.0  # 0.1
     forces_moments = np.array([[fx, fy, fz, Mx, My, Mz]]).T
 
     # ------- physical system -------------

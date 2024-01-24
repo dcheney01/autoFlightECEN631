@@ -151,8 +151,6 @@ class DrawMav:
 
         meshColors[12] = green # tail     
 
-
-
         return points, meshColors
 
     def points_to_mesh(self, points):
@@ -165,20 +163,22 @@ class DrawMav:
 
         #Define each section of the mesh with 3 points
         ##### TODO #####
-        mesh = np.array([
-            [points[0], points[1], points[2]],   # nose-top
-            [points[0], points[2], points[3]],   # nose-left
-            [points[0], points[1], points[4]],   # nose-right
-            [points[0], points[3], points[4]],   # nose-bottom
-            [points[5], points[1], points[2]],   # fuselage-top
-            [points[5], points[2], points[4]],   # fuselage-left 
-            [points[5], points[1], points[4]],   # fuselage-right
-            [points[5], points[3], points[4]],   # fuselage-bottom
-            [points[9], points[8], points[6]],   # wing-left
-            [points[7], points[6], points[8]],   # wing-right
-            [points[13], points[12], points[10]], # tailwing-left
-            [points[10], points[11], points[12]], # tailwing-right     
-            [points[5], points[15], points[14]], # tail
-            ]) 
-
+        mesh = np.array([[points[0], points[1], points[2]], # nose-top
+                         [points[0], points[2], points[3]], # nose-left
+                         [points[0], points[1], points[4]], # nose-right
+                         [points[0], points[3], points[4]], # nose-bottom
+    
+                         [points[1], points[2], points[5]], # fuselage-top
+                         [points[2], points[3], points[5]], # fuselage-left
+                         [points[1], points[4], points[5]], # fuselage-right
+                         [points[3], points[4], points[5]], # fuselage-bottom
+    
+                         [points[6], points[7], points[8]], # wing-left
+                         [points[6], points[9], points[8]], # wing-right
+    
+                         [points[10], points[11], points[12]], # tailwing-left
+                         [points[10], points[13], points[12]], # tailwing-right
+    
+                         [points[14], points[15], points[5]] # tail
+                         ])
         return mesh

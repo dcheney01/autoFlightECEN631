@@ -90,12 +90,13 @@ class MavDynamics:
         u = state.item(3)
         v = state.item(4)
         w = state.item(5)
+        e0 = state.item(6)
+        e1 = state.item(7)
+        e2 = state.item(8)
+        e3 = state.item(9)
         p = state.item(10)
         q = state.item(11)
         r = state.item(12)
-
-        normalized_quaternion = state[6:10]/np.linalg.norm(state[6:10])
-        phi, theta, psi = quaternion_to_euler(normalized_quaternion)
 
         # Extract Forces/Moments
         fx = forces_moments.item(0)
@@ -106,17 +107,16 @@ class MavDynamics:
         n = forces_moments.item(5)
 
         # Position Kinematics
-        cphi = np.cos(phi)
-        sphi = np.sin(phi)
-        cpsi = np.cos(psi)
-        spsi = np.sin(psi)
-        tt = np.tan(theta)
-        ct = np.cos(theta)
-        st = np.sin(theta)
+        R = np.array(
+            [[e1**2 + e0**2 - e2**2 - e3**2, 2*(e1*e2 - e3*e0),             2*(e1*e3 + e2*e0)],
+             [2*(e1*e2 + e3*e0),             e2**2 + e0**2 - e1**2 - e3**2, 2*(e2*e3 - e1*e0)],
+             [2*(e1*e3 - e2*e0),             2*(e2*e3 + e1*e0),             e3**2 + e0**2 - e1**2 - e2**2]
+             ])
         
-        pn_dot = u*ct*cpsi + v*(sphi*st*cpsi - cphi*spsi) + w*(st*cphi*cpsi + sphi*spsi)
-        pe_dot = u*ct*spsi + v*(sphi*st*spsi + cphi*cpsi) + w*(st*cphi*spsi - sphi*cpsi)
-        pd_dot = -u*st + v*sphi*ct + w*cphi*ct
+        pdot = R @ np.array([[u], [v], [w]])
+        pn_dot = pdot.item(0)
+        pe_dot = pdot.item(1)
+        pd_dot = pdot.item(2)
         
         # Position Dynamics
         u_dot = (r*v - q*w) + fx/MAV.mass
@@ -124,15 +124,10 @@ class MavDynamics:
         w_dot = (q*u - p*v) + fz/MAV.mass
 
         # rotational kinematics
-        phi_dot = p + (q*sphi + r*cphi)*tt
-        theta_dot = q*cphi - r*sphi
-        psi_dot = (q*sphi + r*cphi)/ct
-
-        quat_dot = euler_to_quaternion(phi_dot, theta_dot, psi_dot)
-        e0_dot = quat_dot.item(0)
-        e1_dot = quat_dot.item(1)
-        e2_dot = quat_dot.item(2)
-        e3_dot = quat_dot.item(3)
+        e0_dot = 0.5*(-p*e1 - q*e2 - r*e3)
+        e1_dot = 0.5*(p*e0 + r*e2 - q*e3)
+        e2_dot = 0.5*(q*e0 - r*e1 + p*e3)
+        e3_dot = 0.5*(r*e0 + q*e1 - p*e2)
 
         # rotatonal dynamics
         p_dot = (MAV.gamma1 * p * q - MAV.gamma2 * q * r)  + (MAV.gamma3 * l + MAV.gamma4 * n)
