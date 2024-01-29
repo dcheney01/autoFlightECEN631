@@ -10,7 +10,6 @@ import pyqtgraph.opengl as gl
 import pyqtgraph.Vector as Vector
 from viewers.draw_mav import DrawMav
 
-
 class MavViewer():
     def __init__(self, app):
         self.scale = 100
