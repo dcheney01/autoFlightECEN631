@@ -20,17 +20,14 @@ class WindSimulation:
         self.sigma_u = 1.06
         self.sigma_v = 1.06
         self.sigma_w = 0.7
-
-        #   Dryden gust model transfer functions
-        self.u_w = TransferFunction(num=np.array([[self.sigma_u * np.sqrt(2 * self.L_u)]]),
-                                    den=np.array([[self.L_u, 1]]),
-                                    Ts=Ts)
-        self.v_w = TransferFunction(num=np.array([[self.sigma_v * np.sqrt(3 * self.L_v)]]),
-                                    den=np.array([[self.L_v, 1]]),
-                                    Ts=Ts)
-        self.w_w = TransferFunction(num=np.array([[self.sigma_w * np.sqrt(3 * self.L_w)]]),
-                                    den=np.array([[self.L_w, 1]]),
-                                    Ts=Ts)
+        
+        #   Dryden transfer functions (section 4.4 UAV book) - Fill in proper num and den
+        self.u_w = TransferFunction(num=np.array([[self.sigma_u*np.sqrt(2/(np.pi*self.L_u))]]),
+                                    den=np.array([[1,1/self.L_u]]),Ts=Ts)
+        self.v_w = TransferFunction(num=np.array([[self.sigma_v*np.sqrt(3/(np.pi*self.L_v)), self.sigma_v*np.sqrt(1/np.pi)*self.L_v]]),
+                                    den=np.array([[1, 2/self.L_v,1/self.L_v**2]]),Ts=Ts)
+        self.w_w = TransferFunction(num=np.array([[self.sigma_w*np.sqrt(3/(np.pi*self.L_w)), self.sigma_w*np.sqrt(1/np.pi)*self.L_w]]),
+                                    den=np.array([[1, 2/self.L_w,1/self.L_w**2]]),Ts=Ts)
         
         # # Dryden transfer functions (section 4.4 UAV book) - Fill in proper num and den
         # self.u_w = TransferFunction(num=np.array([[0]]), den=np.array([[1,1]]),Ts=Ts)
