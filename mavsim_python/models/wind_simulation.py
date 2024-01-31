@@ -5,6 +5,7 @@ process to represent wind gusts. (Follows section 4.4 in uav book)
 """
 from tools.transfer_function import TransferFunction
 import numpy as np
+import parameters.aerosonde_parameters as MAV_PARAM
 
 
 class WindSimulation:
@@ -17,23 +18,30 @@ class WindSimulation:
         self.L_u = 200.0
         self.L_v = 200.0
         self.L_w = 50.0
-        self.sigma_u = 1.06
-        self.sigma_v = 1.06
-        self.sigma_w = 0.7
-        
+        self.Va = MAV_PARAM.Va0
+
+        if gust_flag:
+            self.sigma_u = 1.06
+            self.sigma_v = 1.06
+            self.sigma_w = 0.7
+        else:
+            self.sigma_u = 0.0
+            self.sigma_v = 0.0
+            self.sigma_w = 0.0
+
         #   Dryden transfer functions (section 4.4 UAV book) - Fill in proper num and den
-        self.u_w = TransferFunction(num=np.array([[self.sigma_u*np.sqrt(2/(np.pi*self.L_u))]]),
-                                    den=np.array([[1,1/self.L_u]]),Ts=Ts)
-        self.v_w = TransferFunction(num=np.array([[self.sigma_v*np.sqrt(3/(np.pi*self.L_v)), self.sigma_v*np.sqrt(1/np.pi)*self.L_v]]),
-                                    den=np.array([[1, 2/self.L_v,1/self.L_v**2]]),Ts=Ts)
-        self.w_w = TransferFunction(num=np.array([[self.sigma_w*np.sqrt(3/(np.pi*self.L_w)), self.sigma_w*np.sqrt(1/np.pi)*self.L_w]]),
-                                    den=np.array([[1, 2/self.L_w,1/self.L_w**2]]),Ts=Ts)
+        u_coefficient = self.sigma_u*np.sqrt(2*self.Va / (np.pi * self.L_u))
+        v_coefficient = self.sigma_v*np.sqrt(2*self.Va / (np.pi*self.L_v))
+        w_coefficient = self.sigma_w*np.sqrt(3*self.Va / (np.pi*self.L_w))
         
-        # # Dryden transfer functions (section 4.4 UAV book) - Fill in proper num and den
-        # self.u_w = TransferFunction(num=np.array([[0]]), den=np.array([[1,1]]),Ts=Ts)
-        # self.v_w = TransferFunction(num=np.array([[0,0]]), den=np.array([[1,1,1]]),Ts=Ts)
-        # self.w_w = TransferFunction(num=np.array([[0,0]]), den=np.array([[1,1,1]]),Ts=Ts)
-        # self._Ts = Ts
+        self.u_w = TransferFunction(num=np.array([[u_coefficient]]),
+                                    den=np.array([[1, self.Va/self.L_u]]), Ts=Ts)
+        self.v_w = TransferFunction(num=np.array([[v_coefficient, v_coefficient*self.Va/(np.sqrt(3)*self.L_v)]]),
+                                    den=np.array([[1, 2*self.Va/self.L_v, self.Va**2/self.L_v**2]]), Ts=Ts)
+        self.w_w = TransferFunction(num=np.array([[w_coefficient, w_coefficient*self.Va/(np.sqrt(3)*self.L_w)]]),
+                                    den=np.array([[1, 2*self.Va/self.L_w, self.Va**2/self.L_w**2]]), Ts=Ts)
+        
+
 
     def update(self):
         # returns a six vector.
