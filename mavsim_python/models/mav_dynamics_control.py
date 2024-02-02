@@ -102,46 +102,34 @@ class MavDynamics(MavDynamicsForces):
 
         # compute Lift and Drag coefficients (CL, CD)
         C_L = MAV.C_L_0 + MAV.C_L_alpha * self._alpha + MAV.C_L_q * MAV.c / (2 * self._Va) * q + MAV.C_L_delta_e * delta.elevator
-        C_D = MAV.C_D_0 + MAV.C_D_alpha * self._alpha + MAV.C_D_q * MAV.c / (2 * self._Va) * q + MAV.C_D_delta_e * delta.elevator
+        
+        
+        C_D_alpha = MAV.C_D_p + (MAV.C_L_0 + MAV.C_L_alpha * self._alpha) ** 2 / (np.pi * MAV.e * MAV.AR)
+        # C_D_alpha = MAV.C_D_0 + + MAV.C_D_alpha * self._alpha
+        C_D = C_D_alpha + MAV.C_D_q * MAV.c / (2 * self._Va) * q + MAV.C_D_delta_e * delta.elevator
+        
+        
+        C_m0 = MAV.C_m_0 + MAV.C_m_alpha * self._alpha + MAV.C_m_q * MAV.c / (2 * self._Va) * q + MAV.C_m_delta_e * delta.elevator
+        C_Y = MAV.C_Y_0 + MAV.C_Y_beta * self._beta + MAV.C_Y_p * MAV.b / (2 * self._Va) * p + MAV.C_Y_r * MAV.b / (2 * self._Va) * r + MAV.C_Y_delta_a * delta.aileron + MAV.C_Y_delta_r * delta.rudder
+        C_l0 = MAV.C_ell_0 + MAV.C_ell_beta * self._beta + MAV.C_ell_p * MAV.b / (2 * self._Va) * p + MAV.C_ell_r * MAV.b / (2 * self._Va) * r + MAV.C_ell_delta_a * delta.aileron + MAV.C_ell_delta_r * delta.rudder
+        C_n0 = MAV.C_n_0 + MAV.C_n_beta * self._beta + MAV.C_n_p * MAV.b / (2 * self._Va) * p + MAV.C_n_r * MAV.b / (2 * self._Va) * r + MAV.C_n_delta_a * delta.aileron + MAV.C_n_delta_r * delta.rudder
 
         # # compute Lift and Drag Forces (F_lift, F_drag)
         F_lift = rho_Va2_S_term * C_L
         F_drag = rho_Va2_S_term * C_D
 
-        # propeller thrust and torque
-        thrust_prop, torque_prop = self._motor_thrust_torque(self._Va, delta.throttle)
-
-        # compute longitudinal forces in body frame (fx, fz)
-        fx = np.cos(self._alpha) * -F_drag + np.sin(self._alpha) * F_lift
+        # compute forces in body frame (fx, fy, fz)
+        fx = -np.cos(self._alpha) * F_drag + np.sin(self._alpha) * F_lift
+        fy = rho_Va2_S_term * C_Y
         fz = -np.sin(self._alpha) * F_drag - np.cos(self._alpha) * F_lift
 
-        # compute lateral forces in body frame (fy)
-        fy = rho_Va2_S_term*\
-            (MAV.C_Y_0 + MAV.C_Y_beta*self._beta + \
-             MAV.C_Y_p*MAV.b / (2 * self._Va)*p + \
-             MAV.C_Y_r*MAV.b / (2 * self._Va)*r + \
-             MAV.C_Y_delta_a*delta.aileron + \
-             MAV.C_Y_delta_r*delta.rudder)
+        # compute torques in body frame (Mx, My, Mz)
+        l = rho_Va2_S_term * MAV.b * C_l0
+        m = rho_Va2_S_term * MAV.c * C_m0
+        n = rho_Va2_S_term * MAV.b * C_n0
 
-        # compute logitudinal torque in body frame (My)
-        m = rho_Va2_S_term*MAV.c*\
-            (MAV.C_m_0 + MAV.C_m_alpha*self._alpha + \
-                MAV.C_m_q*MAV.c / (2 * self._Va)*q + \
-                MAV.C_m_delta_e*delta.elevator)
-
-        # compute lateral torques in body frame (Mx, Mz)
-        l = rho_Va2_S_term*MAV.b*\
-            (MAV.C_ell_0 + MAV.C_ell_beta*self._beta + \
-                MAV.C_ell_p*MAV.b / (2 * self._Va)*p + \
-                MAV.C_ell_r*MAV.b / (2 * self._Va)*r + \
-                MAV.C_ell_delta_a*delta.aileron + \
-                MAV.C_ell_delta_r*delta.rudder)
-        n = rho_Va2_S_term*MAV.b*\
-            (MAV.C_n_0 + MAV.C_n_beta*self._beta + \
-                MAV.C_n_p*MAV.b / (2 * self._Va)*p + \
-                MAV.C_n_r*MAV.b / (2 * self._Va)*r + \
-                MAV.C_n_delta_a*delta.aileron + \
-                MAV.C_n_delta_r*delta.rudder)
+        # propeller thrust and torque
+        thrust_prop, torque_prop = self._motor_thrust_torque(self._Va, delta.throttle)
         
         fx_final = fx + thrust_prop + fg[0]
         fy_final = fy + fg[1]

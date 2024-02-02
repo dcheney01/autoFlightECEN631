@@ -23,15 +23,15 @@ from message_types.msg_delta import MsgDelta
 
 #quitter = QuitListener()
 
-VIDEO = False
-PLOTS = True
+VIDEO = True
+PLOTS = False
 ANIMATION = True
 SAVE_PLOT_IMAGE = False
 
 if VIDEO is True:
     from viewers.video_writer import VideoWriter
-    video = VideoWriter(video_name="chap4_video.avi",
-                        bounding_box=(0, 0, 1000, 1000),
+    video = VideoWriter(video_name="videos/chp4/positive_rudder.avi",
+                        bounding_box=(0, 0, 600, 600),
                         output_rate=SIM.ts_video)
 
 #initialize the visualization
@@ -45,22 +45,22 @@ if PLOTS:
                            data_recording_period=SIM.ts_plot_record_data, time_window_length=30)
 
 # initialize elements of the architecture
-wind = WindSimulation(SIM.ts_simulation)
+wind = WindSimulation(SIM.ts_simulation, gust_flag=False)
 mav = MavDynamics(SIM.ts_simulation)
 delta = MsgDelta()
 
 # initialize the simulation time
 sim_time = SIM.start_time
 plot_time = sim_time
-end_time = 60
+end_time = 5
 
 # main simulation loop
 print("Press 'Esc' to exit...")
 while sim_time < end_time:
     # ------- set control surfaces -------------
     delta.elevator = -0.1248
-    delta.aileron = 0.001836
-    delta.rudder = -0.0003026
+    delta.aileron = 0.001836*0.0
+    delta.rudder = 0.03026#*0.0
     delta.throttle = 0.6768
 
     # ------- physical system -------------
