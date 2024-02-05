@@ -20,7 +20,7 @@ state = np.array([[5], [2], [-20],
                   [0], [0]])
 forces_moments = np.array([[10, 5, 0, 0, 14, 0]]).T
 mav = MavDynamics(SIM.ts_simulation)
-x_dot = mav._derivatives(state, forces_moments)
+x_dot = mav._f(state, forces_moments)
 
 print("State Derivatives: Case 1")
 print("north_dot: ", x_dot[0])
@@ -60,7 +60,7 @@ state = np.array([[5], [2], [-20],
                   [0], [0]])
 forces_moments = np.array([[10, 5, 0, 0, 14, 0]]).T
 mav = MavDynamics(SIM.ts_simulation)
-x_dot = mav._derivatives(state, forces_moments)
+x_dot = mav._f(state, forces_moments)
 
 print("State Derivatives: Case 2")
 print("north_dot: ", x_dot[0])

@@ -6,34 +6,20 @@ compute_trim
 """
 import numpy as np
 from scipy.optimize import minimize
-from tools.rotations import Euler2Quaternion
+from tools.rotations import euler_to_quaternion
 from message_types.msg_delta import MsgDelta
 import time
 
 def compute_trim(mav, Va, gamma):
     # define initial state and input
-
     ##### TODO #####
-    # set the initial conditions of the optimization
-    e0 = Euler2Quaternion(0., gamma, 0.)
-    state0 = np.array([[0],  # pn
-                   [0],  # pe
-                   [0],  # pd
-                   [0],  # u
-                   [0.], # v
-                   [0.], # w
-                   [1],  # e0
-                   [0],  # e1
-                   [0],  # e2
-                   [0],  # e3
-                   [0.], # p
-                   [0.], # q
-                   [0.]  # r
-                   ])
+    state0 = mav._state
     delta0 = np.array([[0],  # elevator
                        [0],  # aileron
                        [0],  # rudder
                        [0]]) # throttle
+    print('state0=', state0.shape)
+    print('delta0=', delta0.shape)
     x0 = np.concatenate((state0, delta0), axis=0)
     # define equality constraints
     cons = ({'type': 'eq',
@@ -77,5 +63,19 @@ def compute_trim(mav, Va, gamma):
 def trim_objective_fun(x, mav, Va, gamma):
     # objective function to be minimized
     ##### TODO #####
-    J = 0
+
+    state = x[0:13].reshape(13,1)
+    delta = MsgDelta(elevator=x.item(13),
+                     aileron=x.item(14),
+                     rudder=x.item(15),
+                     throttle=x.item(16))
+    desired_state = np.array([[0, 0, 0, -Va*np.sin(gamma), 0, 0, 0, 0, 0, 0, 0, 0, 0]]).T
+    
+    mav._state = state
+    mav._update_velocity_data()
+    forces_moments = mav._forces_moments(delta)
+    f = mav._f(state, forces_moments)
+
+    temp = desired_state - f
+    J = np.linalg.norm(temp[2:13])**2
     return J

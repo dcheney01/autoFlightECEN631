@@ -95,24 +95,27 @@ class MavDynamics(MavDynamicsForces):
         p, q, r = self._state[10:13]
         rho_Va2_S_term = 0.5*MAV.rho*(self._Va**2)*MAV.S_wing
 
+        if self._Va == 0.0:
+            c_term = 0.0
+            b_term = 0.0
+        else:
+            c_term = MAV.c / (2 * self._Va)
+            b_term = MAV.b / (2 * self._Va)
+
         # compute gravitational forces ([fg_x, fg_y, fg_z])
         fg = MAV.mass * MAV.gravity * np.array([2*(ex*ez - ey*e0),
                                                 2*(ey*ez + ex*e0),
                                                 (ez**2 + e0**2 - ex**2 - ey**2)])
 
         # compute Lift and Drag coefficients (CL, CD)
-        C_L = MAV.C_L_0 + MAV.C_L_alpha * self._alpha + MAV.C_L_q * MAV.c / (2 * self._Va) * q + MAV.C_L_delta_e * delta.elevator
-        
-        
+        C_L = MAV.C_L_0 + MAV.C_L_alpha * self._alpha + MAV.C_L_q * c_term * q + MAV.C_L_delta_e * delta.elevator
         C_D_alpha = MAV.C_D_p + (MAV.C_L_0 + MAV.C_L_alpha * self._alpha) ** 2 / (np.pi * MAV.e * MAV.AR)
-        # C_D_alpha = MAV.C_D_0 + + MAV.C_D_alpha * self._alpha
-        C_D = C_D_alpha + MAV.C_D_q * MAV.c / (2 * self._Va) * q + MAV.C_D_delta_e * delta.elevator
+        C_D = C_D_alpha + MAV.C_D_q * c_term * q + MAV.C_D_delta_e * delta.elevator
         
-        
-        C_m0 = MAV.C_m_0 + MAV.C_m_alpha * self._alpha + MAV.C_m_q * MAV.c / (2 * self._Va) * q + MAV.C_m_delta_e * delta.elevator
-        C_Y = MAV.C_Y_0 + MAV.C_Y_beta * self._beta + MAV.C_Y_p * MAV.b / (2 * self._Va) * p + MAV.C_Y_r * MAV.b / (2 * self._Va) * r + MAV.C_Y_delta_a * delta.aileron + MAV.C_Y_delta_r * delta.rudder
-        C_l0 = MAV.C_ell_0 + MAV.C_ell_beta * self._beta + MAV.C_ell_p * MAV.b / (2 * self._Va) * p + MAV.C_ell_r * MAV.b / (2 * self._Va) * r + MAV.C_ell_delta_a * delta.aileron + MAV.C_ell_delta_r * delta.rudder
-        C_n0 = MAV.C_n_0 + MAV.C_n_beta * self._beta + MAV.C_n_p * MAV.b / (2 * self._Va) * p + MAV.C_n_r * MAV.b / (2 * self._Va) * r + MAV.C_n_delta_a * delta.aileron + MAV.C_n_delta_r * delta.rudder
+        C_m0 = MAV.C_m_0 + MAV.C_m_alpha * self._alpha + MAV.C_m_q * c_term * q + MAV.C_m_delta_e * delta.elevator
+        C_Y = MAV.C_Y_0 + MAV.C_Y_beta * self._beta + MAV.C_Y_p * b_term * p + MAV.C_Y_r * b_term * r + MAV.C_Y_delta_a * delta.aileron + MAV.C_Y_delta_r * delta.rudder
+        C_l0 = MAV.C_ell_0 + MAV.C_ell_beta * self._beta + MAV.C_ell_p * b_term * p + MAV.C_ell_r * b_term * r + MAV.C_ell_delta_a * delta.aileron + MAV.C_ell_delta_r * delta.rudder
+        C_n0 = MAV.C_n_0 + MAV.C_n_beta * self._beta + MAV.C_n_p * b_term * p + MAV.C_n_r * b_term * r + MAV.C_n_delta_a * delta.aileron + MAV.C_n_delta_r * delta.rudder
 
         # # compute Lift and Drag Forces (F_lift, F_drag)
         F_lift = rho_Va2_S_term * C_L

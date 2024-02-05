@@ -14,12 +14,18 @@ described in this chapter, linearized about the trim state and trim inputs.
     - Implment "compute_tf_model()" and the dependent functions "dT_dVa()",
     "dT_ddelta_t()" in "compute_models.py".
 
+
+# Currently on this one, need to get the df_du working and then debug the rest of the functions
 5.3 Create a function that computes the longitudinal and lateral state
 space models described in this chapter, linearized around trim.
 
     - Implment "compute_ss_model()" and the dependent functions "df_dx()",
       "df_du()", "f_euler()", "euler_state()", "quaternion_state()" in 
       "compute_models.py".
+
+
+# QUESTIONHERE: How to find the eigen values/where to store them? Or just write a script that does this for me?
+
 
 5.4 Compute eigenvalues of A_lon and notice that one of the eigenvalues
 will be zero and that there are two complex conjugate pairs. Using the

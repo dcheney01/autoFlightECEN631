@@ -26,7 +26,7 @@ from tools.signals import Signals
 #quitter = QuitListener()
 
 VIDEO = False
-PLOTS = True
+PLOTS = False
 ANIMATION = True
 SAVE_PLOT_IMAGE = False
 COMPUTE_MODEL = True
@@ -73,7 +73,7 @@ delta_r_trim = delta.rudder
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 60
+end_time = 10
 
 # main simulation loop
 print("Press 'Esc' to exit...")
