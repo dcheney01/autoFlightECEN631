@@ -26,10 +26,10 @@ from tools.signals import Signals
 #quitter = QuitListener()
 
 VIDEO = False
-PLOTS = False
+PLOTS = True
 ANIMATION = True
 SAVE_PLOT_IMAGE = False
-COMPUTE_MODEL = True
+COMPUTE_MODEL = False
 
 # video initialization
 if VIDEO is True:

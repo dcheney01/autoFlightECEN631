@@ -18,8 +18,6 @@ def compute_trim(mav, Va, gamma):
                        [0],  # aileron
                        [0],  # rudder
                        [0]]) # throttle
-    print('state0=', state0.shape)
-    print('delta0=', delta0.shape)
     x0 = np.concatenate((state0, delta0), axis=0)
     # define equality constraints
     cons = ({'type': 'eq',
@@ -69,7 +67,7 @@ def trim_objective_fun(x, mav, Va, gamma):
                      aileron=x.item(14),
                      rudder=x.item(15),
                      throttle=x.item(16))
-    desired_state = np.array([[0, 0, 0, -Va*np.sin(gamma), 0, 0, 0, 0, 0, 0, 0, 0, 0]]).T
+    desired_state = np.array([[0, 0, 0, Va*np.sin(gamma), 0, 0, 0, 0, 0, 0, 0, 0, 0]]).T
     
     mav._state = state
     mav._update_velocity_data()

@@ -106,26 +106,28 @@ def compute_tf_model(mav, trim_state, trim_input):
 
     return Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, a_V1, a_V2, a_V3
 
-
 def compute_ss_model(mav, trim_state, trim_input):
     x_euler = euler_state(trim_state)
     
 
     # QUESTIONHERE: do I use E1 and E2 to convert to A_lon/B_lon? Same with E3/E4
     ##### TODO #####
-    A = df_dx(mav, x_euler, trim_input)
-    B = df_du(mav, x_euler, trim_input)
-    # extract longitudinal states (u, w, q, theta, pd)
-    E1 = np.zeros((5,12))
-    E1[0, 3] = 1
-    E1[1, 5] = 1
-    E1[2, 10] = 1
-    E1[3, 9] = 7
-    E1[4, 2] = -1
-    E2 = np.array([[0, 1], [1, 0], [0, 0], [0, 0], [0, 0]])
+    # A = df_dx(mav, x_euler, trim_input)
+    # B = df_du(mav, x_euler, trim_input)
+    # # extract longitudinal states (u, w, q, theta, pd)
+    # E1 = np.zeros((5,12))
+    # E1[0, 3] = 1
+    # E1[1, 5] = 1
+    # E1[2, 10] = 1
+    # E1[3, 9] = 7
+    # E1[4, 2] = -1
+    # E2 = np.array([[0, 1], [1, 0], [0, 0], [0, 0], [0, 0]])
 
-    A_lon = E1 @ A @ E1.T
-    B_lon = E1 @ B @ E2.T
+    # A_lon = E1 @ A @ E1.T
+    # B_lon = E1 @ B @ E2.T
+
+    A_lon = np.zeros((5,5))
+    B_lon = np.zeros((5,2))
     # change pd to h
 
     # extract lateral states (v, p, r, phi, psi)
@@ -166,10 +168,28 @@ def f_euler(mav, x_euler, delta):
     x_quat = quaternion_state(x_euler)
     mav._state = x_quat
     mav._update_velocity_data()
+    forces_moments = mav._forces_moments(delta)
     ##### TODO #####
-    f_euler_ = df_dx(x_euler, x_quat, delta) + df_du(mav, x_euler, delta)
+    f_q = mav._f(x_quat, forces_moments) 
+    dOmega_dq = jacobian(euler_state, x_quat)
+    f_e = dOmega_dq @ f_q
 
-    return f_euler_
+    return f_e
+
+def jacobian(fun, x):
+    # compute jacobian of fun with respect to x
+    f = fun(x)
+    m = f.shape[0]
+    n = x.shape[0]
+    eps = 0.0001 # deviation
+    J = np.zeros((m, n))
+    for i in range(0, n):
+        x_eps = np.copy(x)
+        x_eps[i][0] += eps
+        f_eps = fun(x_eps)
+        df = (f_eps - f) / eps
+        J[:, i] = df[:, 0]
+    return J
 
 def df_dx(mav, x_euler, delta):
     # take partial of f_euler with respect to x_euler
@@ -179,8 +199,8 @@ def df_dx(mav, x_euler, delta):
     A = np.zeros((12, 12))  # Jacobian of f wrt x
     f_at_x = f_euler(mav, x_euler, delta)
     for i in range(12):
-        x_euler_eps = x_euler
-        x_euler_eps[i] += eps
+        x_euler_eps = x_euler.copy()
+        x_euler_eps[i][0] += eps
         f_at_x_eps = f_euler(mav, x_euler_eps, delta)
         A[:, i] = ((f_at_x_eps - f_at_x) / eps)[:,0]
     return A
@@ -192,14 +212,21 @@ def df_du(mav, x_euler, delta):
     # QUESTIONHERE: how to add eps to delta?
     ##### TODO #####
     B = np.zeros((12, 4))  # Jacobian of f wrt u
-    f_at_u = f_euler(mav, x_euler, delta)
-    for i in range(4):
-        delta_eps = delta
-        delta_eps[i] += eps
-        f_at_u_eps = f_euler(mav, x_euler, delta_eps)
-        B[:, i] = ((f_at_u_eps - f_at_u) / eps)[:,0]
-    return B
 
+    f_at_u = f_euler(mav, x_euler, delta)
+    delta_array = delta.to_array()
+    delta_eps = MsgDelta()
+
+    for i in range(4):
+        delta_array_eps = delta_array.copy()
+        delta_array_eps[i] += eps
+
+        delta_eps.from_array(delta_array)
+        f_at_u_eps = f_euler(mav, x_euler, delta_eps)
+        
+        B[:, i] = ((f_at_u_eps - f_at_u) / eps)[:,0]
+
+    return B
 
 def dT_dVa(mav, Va, delta_t):
     # returns the derivative of motor thrust with respect to Va

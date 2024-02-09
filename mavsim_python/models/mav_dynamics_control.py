@@ -72,13 +72,13 @@ class MavDynamics(MavDynamicsForces):
         if vel_wrt_airmass[0] == 0:
             self._alpha = 0
         else:
-            self._alpha = np.arctan(vel_wrt_airmass[2] / vel_wrt_airmass[0])
+            self._alpha = np.arctan(vel_wrt_airmass[2] / vel_wrt_airmass[0]).item(0)
         
         # compute sideslip angle (self._beta = ?)
         if self._Va == 0:
             self._beta = 0
         else:
-            self._beta = np.arcsin(vel_wrt_airmass[1] / self._Va)
+            self._beta = np.arcsin(vel_wrt_airmass[1] / self._Va).item(0)
 
     def _forces_moments(self, delta):
         """
