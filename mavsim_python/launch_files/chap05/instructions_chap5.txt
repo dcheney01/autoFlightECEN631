@@ -23,9 +23,6 @@ space models described in this chapter, linearized around trim.
       "compute_models.py".
 
 
-# QUESTIONHERE: How to find the eigen values/where to store them? Or just write a script that does this for me?
-
-
 5.4 Compute eigenvalues of A_lon and notice that one of the eigenvalues
 will be zero and that there are two complex conjugate pairs. Using the
 formula (s + λ)(s + λ ∗ ) = s 2 + 2<λs + |λ| 2 = s 2 + 2ζω_n s + ω_n 2 ,
@@ -37,15 +34,29 @@ wings-level, constant-altitude trim condition, and placing an impulse
 on the elevator. By placing an impulse on the elevator, convince
 yourself that the eigenvalues of A lon adequately predict the short
 period and phugoid modes.
-
   - Set up these conditions, run and test in "mavsim_chap5.py"
   - Record or demonstrate the correct behavior in the simulator
+
+
+eig_val_lon:  [ 0.     +0.j      -4.87859+9.86956j -4.87859-9.86956j -0.10413+0.48884j -0.10413-0.48884j] 
+
+# Larger Omega_n corresponds to the short-period mode
+real = -4.87859; imag = 9.86956
+omega_n = np.sqrt((real)**2 + (imag)**2); zeta = -(real)/omega_n; print(f"Omega_n={omega_n}, zeta={zeta}")
+Omega_n=11.009489315208949, zeta=0.4431259125943762
+
+# phugoid mode
+real = -.10413; imag = .48884
+omega_n = np.sqrt((real)**2 + (imag)**2); zeta = -(real)/omega_n; print(f"Omega_n={omega_n}, zeta={zeta}")
+Omega_n=0.4998075654689513, zeta=0.20834018369109442
+
+
 
 5.5 Compute eigenvalues of A lat and notice that there is an eigenvalue
 at zero, a real eigenvalue in the right half plane, a real eigenvalue in the
 left half plane, and a complex conjugate pair. The real eigenvalue in
-the right half plane is the spiral-divergence mode, the real eigenvalueLinear Design Models
-99 in the left half plane is the roll mode, and the complex eigenvalues
+the right half plane is the spiral-divergence mode, the real eigenvalue 
+in the left half plane is the roll mode, and the complex eigenvalues
 are the dutch-roll mode. The lateral modes can be excited by starting
 the simulation in a wings-level, constant-altitude trim condition, and
 placing a unit doublet on the aileron or on the rudder. By simulating the
@@ -55,3 +66,7 @@ predict the roll, spiral-divergence, and dutch-roll modes.
  - Set up these conditions, run and test in "mavsim_chap5.py"
  - Record or demonstrate the correct behavior in the simulator
  - Save the and show the compute_model() output.
+
+                                    # left half         # right half
+ eig_val_lat:  [  0.     +0.j      -22.44162+0.j        0.08936+0.j              -1.14051+4.65511j  -1.14051-4.65511j] 
+                                    # roll mode         # spiral-divergence mode  # dutch-roll mode

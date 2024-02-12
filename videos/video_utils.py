@@ -27,7 +27,7 @@ def add_text_to_video(video_path, text_elements, output_path):
     # Create TextClip objects for each text element
     for text_info in text_elements:
         text = text_info['text']
-        fontsize = text_info.get('fontsize', 50)
+        fontsize = text_info.get('fontsize', 30)
         color = text_info.get('color', 'white')
         position = text_info.get('relative_position', ('0.5', '0.8'))
         font = text_info.get('font', 'Helvetica-Light')
@@ -73,19 +73,21 @@ def combine_video_list(video_paths, output_name):
 
 
 if __name__=="__main__":
-    video_names = ["negative_aileron", "positive_aileron", "negative_elevator", "positive_elevator", "negative_rudder", "positive_rudder"]
+    video_names = ["ShortPeriod_PhugoidModes", "RollSpiral_AileronDoublet", "DutchRoll_RudderDoublet"]
+    video_folder = "videos/chp5/"
+    
     extension = ".avi"
     
     # First add text to all videos (based on video name)
     for video in video_names:
-        video_path = "videos/chp4/" + video + extension
-        text_elements = [{"text": video, "relative_position": (0.1, 0.1)}]
-        output_path = "videos/chp4/" + video + "_text" + extension
+        video_path = video_folder + video + extension
+        text_elements = [{"text": video, "relative_position": (0.01, 0.01)}]
+        output_path = video_folder + video + "_text" + extension
         add_text_to_video(video_path, text_elements, output_path)
 
     # Now combine all videos into one final video
-    video_paths = [f"videos/chp4/{video}_text{extension}" for video in video_names]
-    output_path = "videos/chp4/00final_video.mp4"
+    video_paths = [f"{video_folder+video}_text{extension}" for video in video_names]
+    output_path = f"{video_folder}00final_video.mp4"
     combine_video_list(video_paths, output_path)
     
 

@@ -25,7 +25,7 @@ from tools.signals import Signals
 
 #quitter = QuitListener()
 
-VIDEO = False
+VIDEO = True
 PLOTS = True
 ANIMATION = True
 SAVE_PLOT_IMAGE = False
@@ -34,8 +34,8 @@ COMPUTE_MODEL = False
 # video initialization
 if VIDEO is True:
     from viewers.video_writer import VideoWriter
-    video = VideoWriter(video_name="chap5_video.avi",
-                        bounding_box=(0, 0, 1000, 1000),
+    video = VideoWriter(video_name="videos/chp5/RollSpiral_AileronDoublet.avi",
+                        bounding_box=(100, 100, 600, 700),
                         output_rate=SIM.ts_video)
 
 #initialize the visualization
@@ -66,7 +66,7 @@ if COMPUTE_MODEL:
 # this signal will be used to excite modes
 input_signal = Signals(amplitude=0.3,
                        duration=0.3,
-                       start_time=5.0)
+                       start_time=3.0)
 delta_e_trim = delta.elevator
 delta_a_trim = delta.aileron
 delta_r_trim = delta.rudder
@@ -87,7 +87,7 @@ while sim_time < end_time:
     # this input excites the roll and spiral divergence modes by adding an aileron doublet at t = 5.0 s
     # delta.aileron = delta_a_trim + input_signal.doublet(sim_time)
     # this input excites the dutch roll mode by adding a rudder doublet at t = 5.0 s
-    # delta.rudder = delta_r_trim + input_signal.doublet(sim_time)
+    delta.rudder = delta_r_trim + input_signal.doublet(sim_time)
 
     mav.update(delta, current_wind)  # propagate the MAV dynamics
 

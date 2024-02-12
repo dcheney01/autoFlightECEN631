@@ -65,7 +65,6 @@ print("dT_dVa_: " , dT_dVa_, "\n")
 dT_ddelta_t_ =  dT_ddelta_t(mav, mav._Va, trim_input.throttle)
 print("dT_ddelta_t_: " , dT_ddelta_t_, "\n\n\n")
 
-
 mav._state = np.array([[ 6.19506532e+01],
  [ 2.22940203e+01],
  [-1.10837551e+02],
@@ -367,3 +366,14 @@ print("dT_ddelta_t_: " , dT_ddelta_t_, "\n")
 # dT_dVa_:  -2.3737948095355677 
 
 # dT_ddelta_t_:  60.69183591548715 
+
+
+# find eigen values of A_lon and A_lat
+eig_val_lon, eig_vect_lon  = np.linalg.eig(A_lon)
+eig_val_lat, eig_vet_lat = np.linalg.eig(A_lat)
+
+print("eig_val_lon: " , eig_val_lon, "\n")
+
+print("eig_val_lat: " , eig_val_lat, "\n")
+
+# get omega_n and zeta for each set of eigen values
