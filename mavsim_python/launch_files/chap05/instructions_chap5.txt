@@ -15,7 +15,6 @@ described in this chapter, linearized about the trim state and trim inputs.
     "dT_ddelta_t()" in "compute_models.py".
 
 
-# Currently on this one, need to get the df_du working and then debug the rest of the functions
 5.3 Create a function that computes the longitudinal and lateral state
 space models described in this chapter, linearized around trim.
 

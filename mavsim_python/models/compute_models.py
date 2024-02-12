@@ -109,30 +109,35 @@ def compute_tf_model(mav, trim_state, trim_input):
 def compute_ss_model(mav, trim_state, trim_input):
     x_euler = euler_state(trim_state)
     
-
-    # QUESTIONHERE: do I use E1 and E2 to convert to A_lon/B_lon? Same with E3/E4
     ##### TODO #####
-    # A = df_dx(mav, x_euler, trim_input)
-    # B = df_du(mav, x_euler, trim_input)
+    A = df_dx(mav, x_euler, trim_input)
+    B = df_du(mav, x_euler, trim_input)
     # # extract longitudinal states (u, w, q, theta, pd)
-    # E1 = np.zeros((5,12))
-    # E1[0, 3] = 1
-    # E1[1, 5] = 1
-    # E1[2, 10] = 1
-    # E1[3, 9] = 7
-    # E1[4, 2] = -1
-    # E2 = np.array([[0, 1], [1, 0], [0, 0], [0, 0], [0, 0]])
+    E1 = np.array([[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                   [0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+    E2 = np.array([[0, 1, 0, 0], 
+                   [1, 0, 0, 0]])
+    E3 = np.array([[0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])
+    E4 = np.array([[0, 0, 1, 0], 
+                   [0, 0, 0, 1]])
 
-    # A_lon = E1 @ A @ E1.T
-    # B_lon = E1 @ B @ E2.T
+    A_lon = E1 @ A @ E1.T
+    B_lon = E1 @ B @ E2.T
 
-    A_lon = np.zeros((5,5))
-    B_lon = np.zeros((5,2))
     # change pd to h
+    
 
-    # extract lateral states (v, p, r, phi, psi)
-    A_lat = np.zeros((5,5))
-    B_lat = np.zeros((5,2))
+    A_lat = E3 @ A @ E3.T
+    B_lat = E3 @ B @ E4.T
+
+
     return A_lon, B_lon, A_lat, B_lat
 
 def euler_state(x_quat):
@@ -221,7 +226,7 @@ def df_du(mav, x_euler, delta):
         delta_array_eps = delta_array.copy()
         delta_array_eps[i] += eps
 
-        delta_eps.from_array(delta_array)
+        delta_eps.from_array(delta_array_eps)
         f_at_u_eps = f_euler(mav, x_euler, delta_eps)
         
         B[:, i] = ((f_at_u_eps - f_at_u) / eps)[:,0]
