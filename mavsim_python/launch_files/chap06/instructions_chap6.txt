@@ -19,3 +19,9 @@ manded airspeed, altitude, and course angle. Be sure to command
 course angles that are greater than ±180 degrees.
 
   - Record or demonstrate your autopilot animation and graphs
+
+
+
+
+  # Question: Not using the yaw damper seems to be fine
+  # Question: After a little bit, the velocity seems to get way off

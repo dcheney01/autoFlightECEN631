@@ -203,7 +203,7 @@ class DataViewer:
             self._plotter.add_data_point(plot_id='delta_e', data_label='delta_e', xvalue=t, yvalue=self.__rad_to_deg(delta.elevator))
             self._plotter.add_data_point(plot_id='delta_a', data_label='delta_a', xvalue=t, yvalue=self.__rad_to_deg(delta.aileron))
             self._plotter.add_data_point(plot_id='delta_r', data_label='delta_r', xvalue=t, yvalue=self.__rad_to_deg(delta.rudder))
-            self._plotter.add_data_point(plot_id='delta_t', data_label='delta_t', xvalue=t, yvalue=self.__rad_to_deg(delta.throttle))
+            self._plotter.add_data_point(plot_id='delta_t', data_label='delta_t', xvalue=t, yvalue=delta.throttle)
 
     def process_app(self):
         self._plotter.process_app(0)

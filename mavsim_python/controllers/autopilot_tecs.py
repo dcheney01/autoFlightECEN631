@@ -37,12 +37,15 @@ class Autopilot:
                         kp=AP.pitch_kp,
                         kd=AP.pitch_kd,
                         limit=np.radians(45))
+        
+        # Weight between potential and kinetic energies
+        self.k = 1
         # throttle gains (unitless)
-        self.E_kp = 0
-        self.E_ki = 0
+        self.kp_t = 0
+        self.ki_t = 0
         # pitch gains
-        self.L_kp = 0
-        self.L_ki = 0
+        self.kp_theta = 0
+        self.ki_theta = 0
         # saturated altitude error
         self.h_error_max = 0  # meters
         self.E_integrator = 0
@@ -58,22 +61,42 @@ class Autopilot:
     def update(self, cmd, state):
 	
 	###### TODO ######
+        Va_ref = cmd.airspeed_command
+        h_ref = cmd.altitude_command
+        gamma_ref = cmd.course_command 
+
+        Va = state.Va
+        h = state.altitude
+
+        E_T = 0.5 * MAV.rho * Va_ref**2 + MAV.mass * MAV.gravity * h_ref
+        self.E_integrator += (E_T - self.E_error_d1) * self.Ts / 2
+        # Edot_T = (E_T - self.E_error_d1) / self.Ts
+
+        E_error_k = 0.5 * MAV.mass * (Va_ref**2 - Va**2)
+        E_error_p = MAV.mass * MAV.gravity * (h_ref - h)
+        E_error_T = E_error_p + E_error_k
+        E_error_D = E_error_p + E_error_k
+        D = MAV.mass * MAV.gravity + E_error_D
+
         # lateral autopilot
+        Tc = self.kp_t * E_T + self.ki_t * self.E_integrator
+        # Tc = D + self.kp_t * (Edot_T / (MAV.mass * MAV.gravity * Va)) + self.ki_t *(E_error_T / (MAV.mass * MAV.gravity * Va)) 
+        self.commanded_state.theta = 0 #self.kp_theta / (Va * MAV.gravity) * ((2 - k) * Edot_P - k * Edot_k) + self.ki_theta / (Va * MAV.gravity) * E_error_D
 
 
         # longitudinal TECS autopilot
 
+        self.E_error_d1 = E_error_T
 
         # construct output and commanded states
         delta = MsgDelta(elevator=0,
                          aileron=0,
                          rudder=0,
-                         throttle=0)
-        self.commanded_state.altitude = 0                
-        self.commanded_state.Va = 0
+                         throttle=Tc)
+        self.commanded_state.altitude = h_ref                
         self.commanded_state.phi = 0
-        self.commanded_state.theta = 0
         self.commanded_state.chi = 0
+
         return delta, self.commanded_state
 
     def saturate(self, input, low_limit, up_limit):

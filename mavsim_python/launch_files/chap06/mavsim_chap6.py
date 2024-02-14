@@ -24,6 +24,8 @@ from controllers.autopilot import Autopilot
 # from controllers.autopilot_tecs import Autopilot
 from viewers.mav_viewer import MavViewer
 from viewers.data_viewer import DataViewer
+from models.trim import compute_trim
+
 
 #quitter = QuitListener()
 
@@ -50,7 +52,7 @@ if PLOTS:
                            data_recording_period=SIM.ts_plot_record_data, time_window_length=30)
 
 # initialize elements of the architecture
-wind = WindSimulation(SIM.ts_simulation)
+wind = WindSimulation(SIM.ts_simulation, gust_flag=False)
 mav = MavDynamics(SIM.ts_simulation)
 autopilot = Autopilot(SIM.ts_simulation)
 
@@ -62,13 +64,18 @@ Va_command = Signals(dc_offset=25.0,
                      start_time=2.0,
                      frequency=0.01)
 altitude_command = Signals(dc_offset=100.0,
-                           amplitude=20.0,
+                           amplitude=10.0,
                            start_time=0.0,
                            frequency=0.02)
 course_command = Signals(dc_offset=np.radians(180),
                          amplitude=np.radians(45),
-                         start_time=5.0,
-                         frequency=0.015)
+                         start_time=0.0,
+                         frequency=0.001)
+
+Va = 25.
+gamma = 0.*np.pi/180.
+trim_state, trim_input = compute_trim(mav, Va, gamma)
+mav._state = trim_state  # set the initial state of the mav to the trim state
 
 # initialize the simulation time
 sim_time = SIM.start_time
@@ -89,6 +96,12 @@ while sim_time < end_time:
 
     # -------physical system-------------
     current_wind = wind.update()  # get the new wind vector
+
+    # delta.rudder = trim_input.rudder
+    # delta.aileron = trim_input.aileron
+    # delta.elevator = trim_input.elevator
+    # delta.throttle = trim_input.throttle
+
     mav.update(delta, current_wind)  # propagate the MAV dynamics
 
     # ------- animation -------
