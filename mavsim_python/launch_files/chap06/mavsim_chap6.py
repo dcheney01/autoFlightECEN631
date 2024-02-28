@@ -29,7 +29,7 @@ from models.trim import compute_trim
 
 #quitter = QuitListener()
 
-VIDEO = False
+VIDEO = True
 PLOTS = True
 ANIMATION = True
 SAVE_PLOT_IMAGE = False
@@ -37,8 +37,8 @@ SAVE_PLOT_IMAGE = False
 # video initialization
 if VIDEO is True:
     from viewers.video_writer import VideoWriter
-    video = VideoWriter(video_name="chap6_video.avi",
-                        bounding_box=(0, 0, 1000, 1000),
+    video = VideoWriter(video_name="autoFlightECEN631/videos/chp6/Full_Control.avi",
+                        bounding_box=(0, 0, 2100, 650),
                         output_rate=SIM.ts_video)
 
 #initialize the visualization
@@ -61,16 +61,16 @@ from message_types.msg_autopilot import MsgAutopilot
 commands = MsgAutopilot()
 Va_command = Signals(dc_offset=25.0,
                      amplitude=3.0,
-                     start_time=2.0,
+                     start_time=1.0,
                      frequency=0.01)
 altitude_command = Signals(dc_offset=100.0,
                            amplitude=10.0,
-                           start_time=0.0,
+                           start_time=3.0,
                            frequency=0.02)
-course_command = Signals(dc_offset=np.radians(180),
+course_command = Signals(dc_offset=np.radians(145),
                          amplitude=np.radians(45),
                          start_time=0.0,
-                         frequency=0.001)
+                         frequency=0.03)
 
 Va = 25.
 gamma = 0.*np.pi/180.
@@ -79,7 +79,7 @@ mav._state = trim_state  # set the initial state of the mav to the trim state
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 100
+end_time = 35
 
 # main simulation loop
 print("Press 'Esc' to exit...")

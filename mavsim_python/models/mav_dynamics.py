@@ -38,6 +38,8 @@ class MavDynamics:
                                [MAV.p0],    # (10)
                                [MAV.q0],    # (11)
                                [MAV.r0],    # (12)
+                               [0],         # (13)
+                                 [0],         # (14)
                                ])
         # initialize true_state message
         self.true_state = MsgState()

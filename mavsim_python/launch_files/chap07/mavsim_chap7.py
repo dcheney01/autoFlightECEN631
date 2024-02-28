@@ -25,17 +25,17 @@ from viewers.sensor_viewer import SensorViewer
 
 #quitter = QuitListener()
 
-VIDEO = False
-DATA_PLOTS = False
+VIDEO = True
+DATA_PLOTS = True
 SENSOR_PLOTS = True
-ANIMATION = True
+ANIMATION = False
 SAVE_PLOT_IMAGE = False
 
 # video initialization
 if VIDEO is True:
     from viewers.video_writer import VideoWriter
-    video = VideoWriter(video_name="chap7_video.avi",
-                        bounding_box=(0, 0, 1000, 1000),
+    video = VideoWriter(video_name="autoFlightECEN631/videos/chp7/chap7_video.avi",
+                        bounding_box=(0, 0, 2000, 600),
                         output_rate=SIM.ts_video)
 
 #initialize the visualization
@@ -74,7 +74,7 @@ course_command = Signals(dc_offset=np.radians(180),
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 100
+end_time = 50
 
 # main simulation loop
 print("Press 'Esc' to exit...")

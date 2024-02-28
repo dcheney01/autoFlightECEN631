@@ -69,7 +69,7 @@ class Autopilot:
 
         # longitudinal autopilot
         delta_t = self.airspeed_from_throttle.update(cmd.airspeed_command, state.Va)
-        delta_t = self.saturate(delta_t, -1, 1)
+        delta_t = self.saturate(delta_t, -1, 0)
 
         h_c = self.saturate(cmd.altitude_command, state.altitude - AP.altitude_zone, state.altitude + AP.altitude_zone)
         theta_c = self.altitude_from_pitch.update(h_c, state.altitude)

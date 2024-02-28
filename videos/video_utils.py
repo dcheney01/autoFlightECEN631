@@ -73,15 +73,15 @@ def combine_video_list(video_paths, output_name):
 
 
 if __name__=="__main__":
-    video_names = ["ShortPeriod_PhugoidModes", "RollSpiral_AileronDoublet", "DutchRoll_RudderDoublet"]
-    video_folder = "videos/chp5/"
+    video_names = ["Airspeed_Altitude_Control", "Course_Control", "Full_Control"]
+    video_folder = "videos/chp6/"
     
     extension = ".avi"
     
     # First add text to all videos (based on video name)
     for video in video_names:
         video_path = video_folder + video + extension
-        text_elements = [{"text": video, "relative_position": (0.01, 0.01)}]
+        text_elements = [{"text": video, "relative_position": (0.01, 0.11)}]
         output_path = video_folder + video + "_text" + extension
         add_text_to_video(video_path, text_elements, output_path)
 

@@ -43,5 +43,5 @@ altitude_zone = 20
 #---------airspeed hold using throttle---------------
 wn_airspeed_throttle = 0
 zeta_airspeed_throttle = 0
-airspeed_throttle_kp = -1.9
+airspeed_throttle_kp = -2.2
 airspeed_throttle_ki = -1.0
