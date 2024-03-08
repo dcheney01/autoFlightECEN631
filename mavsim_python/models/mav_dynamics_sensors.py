@@ -51,9 +51,9 @@ class MavDynamics(MavDynamicsNoSensors):
         r = self._state.item(12)
 
         # simulate rate gyros(units are rad / sec)
-        self._sensors.gyro_x = p * SENSOR.gyro_x_bias + np.random.normal(scale=SENSOR.gyro_sigma)
-        self._sensors.gyro_y = q * SENSOR.gyro_y_bias + np.random.normal(scale=SENSOR.gyro_sigma)
-        self._sensors.gyro_z = r * SENSOR.gyro_z_bias + np.random.normal(scale=SENSOR.gyro_sigma)
+        self._sensors.gyro_x = p + SENSOR.gyro_x_bias + np.random.normal(scale=SENSOR.gyro_sigma)
+        self._sensors.gyro_y = q + SENSOR.gyro_y_bias + np.random.normal(scale=SENSOR.gyro_sigma)
+        self._sensors.gyro_z = r + SENSOR.gyro_z_bias + np.random.normal(scale=SENSOR.gyro_sigma)
 
         # simulate accelerometers(units of g)
         self._sensors.accel_x = fx/m + g*np.sin(theta) + np.random.normal(scale=SENSOR.accel_sigma)
