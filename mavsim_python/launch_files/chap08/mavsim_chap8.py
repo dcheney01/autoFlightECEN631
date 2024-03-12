@@ -31,7 +31,7 @@ from models.trim import compute_trim
 
 VIDEO = False
 DATA_PLOTS = True
-SENSOR_PLOTS = True
+SENSOR_PLOTS = False
 ANIMATION = False
 SAVE_PLOT_IMAGE = False
 COMPUTE_MODEL = False
@@ -56,7 +56,7 @@ if SENSOR_PLOTS:
                            data_recording_period=SIM.ts_plot_record_data, time_window_length=30)
 
 # initialize elements of the architecture
-wind = WindSimulation(SIM.ts_simulation, gust_flag=False)
+wind = WindSimulation(SIM.ts_simulation, gust_flag=True)
 mav = MavDynamics(SIM.ts_simulation)
 autopilot = Autopilot(SIM.ts_simulation)
 observer = Observer(SIM.ts_simulation)

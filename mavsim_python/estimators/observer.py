@@ -8,6 +8,7 @@ import numpy as np
 from scipy import stats
 import parameters.control_parameters as CTRL
 import parameters.simulation_parameters as SIM
+import parameters.aerosonde_parameters as MAV
 import parameters.sensor_parameters as SENSOR
 from tools.wrap import wrap
 from message_types.msg_state import MsgState
@@ -41,8 +42,6 @@ class Observer:
 
     def update(self, measurement):
         ##### TODO #####
-
-        # print(self.estimated_state.phi, self.estimated_state.theta)
 
         # estimates for p, q, r are low pass filter of gyro minus bias estimate
         self.estimated_state.p = self.lpf_gyro_x.update(measurement.gyro_x) - SENSOR.gyro_x_bias
@@ -86,21 +85,22 @@ class EkfAttitude:
     def __init__(self, ts):
         ##### TODO #####
         self.Q = np.diag([
-            0.1**2, # phi 
-            0.1**2, # theta
+            1e-6, # phi 
+            1e-6, # theta
             ])
         self.P = np.diag([
-            0**2, # phi
-            0**2, # theta
+            np.deg2rad(10)**2, # phi
+            np.deg2rad(10)**2, # theta
             ])
         self.xhat = np.array([
-            [0.0], # phi 
-            [0.0], # theta
+            [MAV.phi0], # phi 
+            [MAV.theta0], # theta
             ]) # initial state: phi, theta
-        self.R_accel = np.diag([0.1**2, 0.1**2, 0.1**2])
+        self.Q_gyro = SENSOR.gyro_sigma**2 * np.eye(3)
+        self.R_accel = SENSOR.accel_sigma**2 * np.eye(3)
         self.N = 5  # number of prediction step per sample
         self.Ts = ts/self.N
-        self.gate_threshold = stats.chi2.isf(q=0.01, df=3)
+        self.gate_threshold = stats.chi2.isf(q=0.1, df=2)
 
     def update(self, measurement, state):
         self.propagate_model(measurement, state)
@@ -114,16 +114,17 @@ class EkfAttitude:
         phi = x.item(0)
         theta = x.item(1)
 
-        xdot = np.array([[state.p + np.sin(phi)*np.tan(theta)*state.q + np.cos(phi)*np.tan(theta)*state.r],
-                         [np.cos(phi)*state.q - np.sin(phi)*state.r]])
+        p = state.p
+        q = state.q
+        r = state.r
+
+        xdot = np.array([[p + q*np.sin(phi)*np.tan(theta) + r*np.cos(phi)*np.tan(theta)],
+                            [q*np.cos(phi) - r*np.sin(phi)]])
         return xdot
 
     def h(self, x, measurement, state):
         # measurement model y=h(x,u)
         ##### TODO #####
-        # y = np.array([[measurement.accel_x],  # x-accel
-        #                 [measurement.accel_y],# y-accel
-        #                 [measurement.accel_z]])  # z-accel
         phi = x.item(0)
         theta = x.item(1)
 
@@ -144,9 +145,12 @@ class EkfAttitude:
         Tp = self.Ts
         for i in range(0, self.N):
             self.xhat = self.xhat + Tp*self.f(self.xhat, measurement, state)
+
+            G = np.array([[1, np.sin(self.xhat.item(0))*np.tan(self.xhat.item(1)), np.cos(self.xhat.item(0))*np.tan(self.xhat.item(1))],
+                          [0, np.cos(self.xhat.item(0)), -np.sin(self.xhat.item(0))]]) # TODO fix G
             A = jacobian(self.f, self.xhat, measurement, state)
             Ad = np.eye(2) + A*Tp + A@A*Tp**2
-            self.P = Ad @ self.P @ Ad.T + Tp**2 * self.Q
+            self.P = Ad @ self.P @ Ad.T + Tp**2 * (self.Q + G @ self.Q_gyro @ G.T)
 
     def measurement_update(self, measurement, state):
         # measurement updates
@@ -166,49 +170,49 @@ class EkfPosition:
     # implement continous-discrete EKF to estimate pn, pe, Vg, chi, wn, we, psi
     def __init__(self, ts):
         self.Q = np.diag([
-                    0.1**2, # pn
-                    0.6**2, # pe
-                    0**2, # Vg
-                    1**2, # chi
-                    1**2, # wn
-                    1**2, # we
-                    0.6**2, # psi
+                    0.001, # pn
+                    0.001, # pe
+                    9e-1, # Vg
+                    0.9, # chi
+                    0.4, # wn
+                    0.4, # we
+                    100, # psi
                     ])
         self.P = np.diag([
-                    0**2, # pn
-                    0**2, # pe
-                    0**2, # Vg
-                    0**2, # chi
-                    0**2, # wn
-                    0**2, # we
-                    0**2, # psi
+                    1**2, # pn
+                    1**2, # pe
+                    2**2, # Vg
+                    np.deg2rad(10)**2, # chi
+                    2**2, # wn
+                    2**2, # we
+                    np.deg2rad(5)**2, # psi
                     ])
         self.xhat = np.array([
-            [0.0], # pn
-            [0.0], # pe
-            [CTRL.Va0], # Vg
-            [0.0], # chi
-            [0.0], # wn
-            [0.0], # we
-            [0.0], # psi
+            [MAV.north0], # pn
+            [MAV.east0], # pe
+            [MAV.Va0], # Vg
+            [0], # chi
+            [0], # wn
+            [0], # we
+            [MAV.psi0], # psi
             ])
         self.R_gps = np.diag([
-                    0.001**2,  # y_gps_n
-                    20**2,  # y_gps_e
-                    10**2,  # y_gps_Vg
-                    20**2,  # y_gps_course
+                    SENSOR.gps_n_sigma**2,  # y_gps_n
+                    SENSOR.gps_e_sigma**2,  # y_gps_e
+                    SENSOR.gps_Vg_sigma**2,  # y_gps_Vg
+                    SENSOR.gps_course_sigma**2,  # y_gps_course
                     ])
         self.R_pseudo = np.diag([
-                    1**2,  # pseudo measurement #1
-                    1**2,  # pseudo measurement #2
+                    0.1**2,  # pseudo measurement #1
+                    0.1**2,  # pseudo measurement #2
                     ])
         self.N = 5  # number of prediction step per sample
         self.Tp = ts / self.N
-        self.gps_n_old = 0
-        self.gps_e_old = 0
-        self.gps_Vg_old = 0
-        self.gps_course_old = 0
-        self.pseudo_threshold = stats.chi2.isf(q=0.01, df=4)
+        self.gps_n_old = MAV.north0
+        self.gps_e_old = MAV.east0
+        self.gps_Vg_old = MAV.Va0
+        self.gps_course_old = MAV.psi0
+        self.pseudo_threshold = stats.chi2.isf(q=0.01, df=2)
         self.gps_threshold = 100000 # don't gate GPS
 
     def update(self, measurement, state):
@@ -250,11 +254,12 @@ class EkfPosition:
 
     def h_gps(self, x, measurement, state):
         # measurement model for gps measurements y=h(x,u)
+
         y = np.array([
-            [measurement.gps_n], #pn
-            [measurement.gps_e], #pe
-            [measurement.gps_Vg], #Vg
-            [measurement.gps_course], #chi
+            [x.item(0)],  # pn
+            [x.item(1)],  # pe
+            [x.item(2)],  # Vg
+            [x.item(3)],  # chi
         ])
         return y
 
@@ -291,11 +296,10 @@ class EkfPosition:
         # always update based on wind triangle pseudo measurement
         yhat = self.h_pseudo(self.xhat, measurement, state)
         C = jacobian(self.h_pseudo, self.xhat, measurement, state)
-        y = np.array([[state.Va*np.cos(state.psi) + state.wn - measurement.gps_Vg*np.cos(measurement.gps_course),
-                       state.Va*np.sin(state.psi) + state.we - measurement.gps_Vg*np.sin(measurement.gps_course)]]).T
+        y = np.array([[0, 0]]).T
         S_inv = np.linalg.inv(C @ self.P @ C.T + self.R_pseudo)
-
-        if (y-yhat).T @ S_inv @ (y-yhat) < self.pseudo_threshold:
+        if True:#(y-yhat).T @ S_inv @ (y-yhat) < self.pseudo_threshold:
+            # print("Used measurement update for pseudo")
             L = self.P @ C.T @ S_inv
             self.P = (np.eye(7) - L @ C) @ self.P @ (np.eye(7) - L @ C).T + L @ self.R_pseudo @ L.T
             self.xhat = self.xhat + L @ (y-yhat)
@@ -314,7 +318,7 @@ class EkfPosition:
                            measurement.gps_Vg,
                            y_chi]]).T
             S_inv = np.linalg.inv(C @ self.P @ C.T + self.R_gps)
-            if (y-yhat).T @ S_inv @ (y-yhat) < self.gps_threshold:
+            if True: #(y-yhat).T @ S_inv @ (y-yhat) < self.gps_threshold:
                 L = self.P @ C.T @ S_inv
                 self.P = (np.eye(7) - L @ C) @ self.P @ (np.eye(7) - L @ C).T + L @ self.R_gps @ L.T
                 self.xhat = self.xhat + L @ (y-yhat)
