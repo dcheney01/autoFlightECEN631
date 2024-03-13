@@ -13,7 +13,10 @@ import time
 def compute_trim(mav, Va, gamma):
     # define initial state and input
     ##### TODO #####
-    state0 = mav._state
+    e0 = euler_to_quaternion(0, gamma, 0)
+    state0 = np.array([[0, 0, 0, Va, 0, 0, 
+                        e0.item(0), e0.item(1), e0.item(2), e0.item(3), 
+                        0, 0, 0]]).reshape(13,1)
     delta0 = np.array([[0],  # elevator
                        [0],  # aileron
                        [0],  # rudder

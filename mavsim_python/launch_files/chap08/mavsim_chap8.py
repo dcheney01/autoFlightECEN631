@@ -25,11 +25,10 @@ from estimators.observer import Observer
 from viewers.mav_viewer import MavViewer
 from viewers.data_viewer import DataViewer
 from viewers.sensor_viewer import SensorViewer
-from models.trim import compute_trim
 
 #quitter = QuitListener()
 
-VIDEO = False
+VIDEO = True
 DATA_PLOTS = True
 SENSOR_PLOTS = False
 ANIMATION = False
@@ -39,8 +38,8 @@ COMPUTE_MODEL = False
 # video initialization
 if VIDEO is True:
     from viewers.video_writer import VideoWriter
-    video = VideoWriter(video_name="chap8_video.avi",
-                        bounding_box=(0, 0, 1000, 1000),
+    video = VideoWriter(video_name="videos/chp8/chap8_video.avi",
+                        bounding_box=(0, 0, 2000, 1500),
                         output_rate=SIM.ts_video)
 
 #initialize the visualization
@@ -79,7 +78,7 @@ chi_command = Signals(dc_offset=np.radians(0.0),
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 500
+end_time = 100
 
 
 # main simulation loop

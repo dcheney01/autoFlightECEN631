@@ -29,7 +29,7 @@ VIDEO = True
 PLOTS = True
 ANIMATION = True
 SAVE_PLOT_IMAGE = False
-COMPUTE_MODEL = False
+COMPUTE_MODEL = True
 
 # video initialization
 if VIDEO is True:
