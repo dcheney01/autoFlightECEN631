@@ -10,7 +10,7 @@ mavsim_python
 import os, sys
 # insert parent directory at beginning of python search path
 from pathlib import Path
-sys.path.insert(0,os.fspath(Path(__file__).parents[1]))
+sys.path.insert(0,os.fspath(Path(__file__).parents[2]))
 # use QuitListener for Linux or PC <- doesn't work on Mac
 #from tools.quit_listener import QuitListener
 import numpy as np
@@ -18,15 +18,15 @@ import pyqtgraph as pg
 import parameters.simulation_parameters as SIM
 from models.mav_dynamics_sensors import MavDynamics
 from models.wind_simulation import WindSimulation
-from control.autopilot import Autopilot
-from estimation.observer import Observer
-from planning.path_follower import PathFollower
+from controllers.autopilot import Autopilot
+from estimators.observer import Observer
+from planners.path_follower import PathFollower
 from viewers.data_viewer import DataViewer
 from viewers.mav_path_viewer import MAVAndPathViewer
 
 #quitter = QuitListener()
 
-VIDEO = False
+VIDEO = True
 DATA_PLOTS = True
 ANIMATION = True
 SAVE_PLOT_IMAGE = False
@@ -34,8 +34,8 @@ SAVE_PLOT_IMAGE = False
 # video initialization
 if VIDEO is True:
     from viewers.video_writer import VideoWriter
-    video = VideoWriter(video_name="chap10_video.avi",
-                        bounding_box=(0, 0, 1000, 1000),
+    video = VideoWriter(video_name="videos/chp10/OrbitFollowing.avi",
+                        bounding_box=(0, 0, 700, 800),
                         output_rate=SIM.ts_video)
 
 # initialize the visualization
@@ -49,7 +49,9 @@ if DATA_PLOTS:
 
 
 # initialize elements of the architecture
-wind = WindSimulation(SIM.ts_simulation)
+wind = WindSimulation(SIM.ts_simulation, gust_flag=False, steady_state=np.array([[3., -3., 0.]]).T)
+# wind = WindSimulation(SIM.ts_simulation, gust_flag=False)
+
 mav = MavDynamics(SIM.ts_simulation)
 autopilot = Autopilot(SIM.ts_simulation)
 observer = Observer(SIM.ts_simulation)
@@ -58,8 +60,8 @@ path_follower = PathFollower()
 # path definition
 from message_types.msg_path import MsgPath
 path = MsgPath()
-path.type = 'line'
-#path.type = 'orbit'
+# path.type = 'line'
+path.type = 'orbit'
 if path.type == 'line':
     path.line_origin = np.array([[0.0, 0.0, -100.0]]).T
     path.line_direction = np.array([[0.5, 1.0, 0.0]]).T
@@ -78,11 +80,13 @@ print("Press 'Esc' to exit...")
 while sim_time < end_time:
     # -------observer-------------
     measurements = mav.sensors()  # get sensor measurements
-    estimated_state = observer.update(measurements)  # estimate states from measurements
+    # estimated_state = observer.update(measurements)  # estimate states from measurements
+    estimated_state = mav.true_state  # use true states for the example TODO change this
+
 
     # -------path follower-------------
-    autopilot_commands = path_follower.update(path, estimated_state)
-    #autopilot_commands = path_follower.update(path, mav.true_state)  # for debugging
+    # autopilot_commands = path_follower.update(path, estimated_state)
+    autopilot_commands = path_follower.update(path, mav.true_state)  # for debugging
 
     # -------autopilot-------------
     delta, commanded_state = autopilot.update(autopilot_commands, estimated_state)

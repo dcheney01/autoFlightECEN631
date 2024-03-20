@@ -67,8 +67,8 @@ altitude_command = Signals(dc_offset=100.0,
                            amplitude=10.0,
                            start_time=3.0,
                            frequency=0.02)
-course_command = Signals(dc_offset=np.radians(145),
-                         amplitude=np.radians(45),
+course_command = Signals(dc_offset=np.radians(135),
+                         amplitude=np.radians(35),
                          start_time=0.0,
                          frequency=0.03)
 
