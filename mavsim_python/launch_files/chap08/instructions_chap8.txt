@@ -20,8 +20,4 @@ opposed to the true states. Tune autopilot and estimator gains if neces-
 sary. By changing the bandwidth of the low-pass filter, note that the
 stability of the closed loop system is heavily influenced by this value.
 
-<<<<<<< HEAD
  - Demonstrate or record your working estimator.
-=======
- - Demonstrate or record your working estimator.
->>>>>>> 2530a36cb1001b2ea17b9bf6175f76849718e56a

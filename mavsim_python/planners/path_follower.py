@@ -1,4 +1,7 @@
 import numpy as np
+from math import sin, cos
+from message_types.msg_state import MsgState
+from message_types.msg_path import MsgPath
 from message_types.msg_autopilot import MsgAutopilot
 from tools.wrap import wrap
 
@@ -12,14 +15,18 @@ class PathFollower:
         self.gravity = 9.81
         self.autopilot_commands = MsgAutopilot()  # message sent to autopilot
 
-    def update(self, path, state):
+    def update(self, 
+               path: MsgPath, 
+               state: MsgState)->MsgAutopilot:
         if path.type == 'line':
             self._follow_straight_line(path, state)
         elif path.type == 'orbit':
             self._follow_orbit(path, state)
         return self.autopilot_commands
 
-    def _follow_straight_line(self, path, state):
+    def _follow_straight_line(self, 
+                              path: MsgPath, 
+                              state: MsgState):
         ##### TODO #####
         e = np.array([state.north - path.line_origin[0], 
                        state.east - path.line_origin[1], 
@@ -48,7 +55,9 @@ class PathFollower:
         # feedforward roll angle for straight line is zero
         self.autopilot_commands.phi_feedforward = 0
 
-    def _follow_orbit(self, path, state):
+    def _follow_orbit(self, 
+                      path: MsgPath, 
+                      state: MsgState):
         ##### TODO #####
 
         pn = state.north
