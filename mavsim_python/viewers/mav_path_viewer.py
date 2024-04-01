@@ -4,16 +4,19 @@ mavsim_python: path viewer (for chapter 10)
     - Update history:
         4/15/2019 - BGM
         3/30/2020 - RWB
+        7/13/2023 - RWB
+        3/25/2024 - Carson Moon
 """
 import numpy as np
-import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 from viewers.draw_mav import DrawMav
 from viewers.draw_path import DrawPath
+from message_types.msg_state import MsgState
+from message_types.msg_path import MsgPath
+from time import time
 
-
-class MAVAndPathViewer:
-    def __init__(self, app):
+class MavAndPathViewer:
+    def __init__(self, app, ts_refresh=1./30.):
         self.scale = 2000
         # initialize Qt gui application and window
         self.app = app  # initialize QT
@@ -36,8 +39,14 @@ class MAVAndPathViewer:
         self.plot_initialized = False  # has the mav been plotted yet?
         self.mav_plot = []
         self.path_plot = []
+        self.ts_refresh = ts_refresh
+        self.t = time()
+        self.t_next = self.t        
 
-    def update(self, state, path):
+    def update(self, 
+               state: MsgState, 
+               path: MsgPath,
+               ):
         blue = np.array([[30, 144, 255, 255]])/255.
         red = np.array([[1., 0., 0., 1]])
         # initialize the drawing the first time update() is called
@@ -48,7 +57,11 @@ class MAVAndPathViewer:
             path.plot_updated = True
         # else update drawing on all other calls to update()
         else:
-            self.mav_plot.update(state)
+            t = time()
+            if t-self.t_next > 0.0:
+                self.mav_plot.update(state)
+                self.t = t
+                self.t_next = t + self.ts_refresh
             if not path.plot_updated:
                 self.path_plot.update(path)
                 path.plot_updated = True

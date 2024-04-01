@@ -14,12 +14,10 @@ sys.path.insert(0,os.fspath(Path(__file__).parents[2]))
 # use QuitListener for Linux or PC <- doesn't work on Mac
 #from tools.quit_listener import QuitListener
 import numpy as np
-import pyqtgraph as pg
 import parameters.simulation_parameters as SIM
-from viewers.mav_viewer import MavViewer
-from viewers.data_viewer import DataViewer
 from message_types.msg_delta import MsgDelta
 from models.mav_dynamics import MavDynamics
+from viewers.manage_viewers import Viewers
 
 #quitter = QuitListener()
 
@@ -47,6 +45,7 @@ if VIDEO is True:
 # initialize elements of the architecture
 mav = MavDynamics(SIM.ts_simulation)
 delta = MsgDelta()
+viewers = Viewers(animation=True, data=True)
 
 # initialize the simulation time
 sim_time = SIM.start_time
@@ -68,17 +67,14 @@ while sim_time < end_time:
     mav.update(forces_moments)  # propagate the MAV dynamics
 
     # ------- update viewers -------------
-    if ANIMATION:
-        mav_view.update(mav.true_state)  # plot body of MAV
-    if PLOTS:
-        data_view.update(mav.true_state,  # true states
-                        None,  # estimated states
-                        None,  # commanded states
-                        None)  # inputs to the aircraft
-    if ANIMATION or PLOTS:
-        app.processEvents()
-    if VIDEO is True:
-        video.update(sim_time)
+    viewers.update(
+        sim_time,
+        mav.true_state,  # true states
+        None,  # estimated states
+        None,  # commanded states
+        None,  # inputs to aircraft
+        None,  # measurements
+    )
 
     # ------- increment time -------------
     sim_time += SIM.ts_simulation
@@ -88,9 +84,4 @@ while sim_time < end_time:
     #     break
 
 # Save an Image of the Plot
-if SAVE_PLOT_IMAGE and PLOTS:
-    data_view.save_plot_image("ch3_plot")
-
-# Close Video
-if VIDEO is True:
-    video.close()
+viewers.close(dataplot_name="ch3_data_plot")

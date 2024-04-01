@@ -3,19 +3,20 @@ observer
     - Beard & McLain, PUP, 2012
     - Last Update:
         3/2/2019 - RWB
+        3/4/2024 - RWB
 """
 import numpy as np
-from scipy import stats
 import parameters.control_parameters as CTRL
-import parameters.simulation_parameters as SIM
 import parameters.aerosonde_parameters as MAV
 import parameters.sensor_parameters as SENSOR
 from tools.wrap import wrap
 from message_types.msg_state import MsgState
 from message_types.msg_sensors import MsgSensors
+from estimators.filters import AlphaFilter, ExtendedKalmanFilterContinuousDiscrete
 
 class Observer:
-    def __init__(self, ts, initial_measurements = MsgSensors()):
+    def __init__(self, ts: float, initial_measurements: MsgSensors=MsgSensors()):
+        self.Ts = ts  # sample rate of observer
         # initialized estimated state message
         self.estimated_state = MsgState()
 
@@ -36,11 +37,89 @@ class Observer:
         self.lpf_abs = AlphaFilter(alpha=0.9, y0=initial_measurements.abs_pressure)
         self.lpf_diff = AlphaFilter(alpha=0.1, y0=initial_measurements.diff_pressure)
         # ekf for phi and theta
-        self.attitude_ekf = EkfAttitude(ts)
+        self.attitude_ekf = ExtendedKalmanFilterContinuousDiscrete(
+            f=self.f_attitude, 
+            Q=np.diag([
+                (0)**2, # phi 
+                (0)**2, # theta
+                ]), 
+            P0= np.diag([
+                (0)**2, # phi
+                (0)**2, # theta
+                ]), 
+            xhat0=np.array([
+                [0.*np.pi/180.], # phi 
+                [0.*np.pi/180.], # theta
+                ]), 
+            Qu=np.diag([
+                SENSOR.gyro_sigma**2, 
+                SENSOR.gyro_sigma**2, 
+                SENSOR.gyro_sigma**2, 
+                SENSOR.abs_pres_sigma]), 
+            Ts=ts,
+            N=5
+            )
         # ekf for pn, pe, Vg, chi, wn, we, psi
-        self.position_ekf = EkfPosition(ts)
+        self.position_ekf = ExtendedKalmanFilterContinuousDiscrete(
+            f=self.f_smooth, 
+            Q=np.diag([
+                (0.0)**2,  # pn
+                (0.0)**2,  # pe
+                (0.0)**2,  # Vg
+                (0.0)**2, # chi
+                (0.0)**2, # wn
+                (0.0)**2, # we
+                (0.0)**2, # psi
+                ]), 
+            P0=np.diag([
+                (0.)**2, # pn
+                (0.0)**2, # pe
+                (0.0)**2, # Vg
+                (0.*np.pi/180.)**2, # chi
+                (0.0)**2, # wn
+                (0.0)**2, # we
+                (0.*np.pi/180.)**2, # psi
+                ]), 
+            xhat0=np.array([
+                [0.0], # pn 
+                [0.0], # pe 
+                [0.0], # Vg 
+                [0.0], # chi
+                [0.0], # wn 
+                [0.0], # we 
+                [0.0], # psi
+                ]), 
+            Qu=0.*np.diag([
+                SENSOR.gyro_sigma**2, 
+                SENSOR.gyro_sigma**2, 
+                SENSOR.abs_pres_sigma,
+                np.radians(3), # guess for noise on roll
+                np.radians(3), # guess for noise on pitch
+                ]),
+            Ts=ts,
+            N=10
+            )
+        self.R_accel = np.diag([
+                SENSOR.accel_sigma**2, 
+                SENSOR.accel_sigma**2, 
+                SENSOR.accel_sigma**2
+                ])
+        self.R_pseudo = np.diag([
+                0.0,  # pseudo measurement #1 ##### TODO #####
+                0.0,  # pseudo measurement #2 ##### TODO #####
+                ])
+        self.R_gps = np.diag([
+                    SENSOR.gps_n_sigma**2,  # y_gps_n
+                    SENSOR.gps_e_sigma**2,  # y_gps_e
+                    SENSOR.gps_Vg_sigma**2,  # y_gps_Vg
+                    SENSOR.gps_course_sigma**2,  # y_gps_course
+                    ])
+        self.gps_n_old = 9999
+        self.gps_e_old = 9999
+        self.gps_Vg_old = 9999
+        self.gps_course_old = 9999
 
-    def update(self, measurement):
+    def update(self, measurement: MsgSensors) -> MsgState:
         ##### TODO #####
 
         # estimates for p, q, r are low pass filter of gyro minus bias estimate
@@ -59,7 +138,7 @@ class Observer:
         self.position_ekf.update(measurement, self.estimated_state)
 
         # not estimating these
-        self.estimated_state.alpha = 0.0
+        self.estimated_state.alpha = self.estimated_state.theta
         self.estimated_state.beta = 0.0
         self.estimated_state.bx = 0.0
         self.estimated_state.by = 0.0
@@ -122,16 +201,20 @@ class EkfAttitude:
                             [q*np.cos(phi) - r*np.sin(phi)]])
         return xdot
 
-    def h(self, x, measurement, state):
-        # measurement model y=h(x,u)
+    def h_accel(self, x: np.ndarray, u: np.ndarray)->np.ndarray:
+        '''
+            measurement model y=h(x,u) for accelerometers
+                x = [phi, theta].T
+                u = [p, q, r, Va].T
+        '''
         ##### TODO #####
         phi = x.item(0)
         theta = x.item(1)
 
-        p = measurement.gyro_x - SENSOR.gyro_x_bias
-        q = measurement.gyro_y - SENSOR.gyro_y_bias
-        r = measurement.gyro_z - SENSOR.gyro_z_bias
-        Va = np.sqrt(2/CTRL.rho * measurement.diff_pressure)
+        p = u.gyro_x - SENSOR.gyro_x_bias
+        q = u.gyro_y - SENSOR.gyro_y_bias
+        r = u.gyro_z - SENSOR.gyro_z_bias
+        Va = np.sqrt(2/CTRL.rho * u.diff_pressure)
         g = CTRL.gravity
 
         y = np.array([[q*Va*np.sin(theta) + g*np.sin(theta)],
@@ -323,17 +406,3 @@ class EkfPosition:
             self.gps_course_old = measurement.gps_course
 
 
-def jacobian(fun, x, measurement, state):
-    # compute jacobian of fun with respect to x
-    f = fun(x, measurement, state)
-    m = f.shape[0]
-    n = x.shape[0]
-    eps = 0.0001  # deviation
-    J = np.zeros((m, n))
-    for i in range(0, n):
-        x_eps = np.copy(x)
-        x_eps[i][0] += eps
-        f_eps = fun(x_eps, measurement, state)
-        df = (f_eps - f) / eps
-        J[:, i] = df[:, 0]
-    return J
