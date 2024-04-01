@@ -7,7 +7,7 @@ mavsim_python: drawing tools
 """
 import numpy as np
 import pyqtgraph.opengl as gl
-from planning.dubins_parameters import DubinsParameters
+from planners.dubins_parameters import DubinsParameters
 
 
 class DrawWaypoints:
@@ -50,7 +50,7 @@ class DrawWaypoints:
 
     def dubins_points(self, waypoints, radius, Del):
         # returns a list of points along the dubins path
-        #initialize_points = True
+        initialize_points = True
         dubins_path = DubinsParameters()
         for j in range(0, waypoints.num_waypoints-1):
             dubins_path.update(
@@ -64,8 +64,8 @@ class DrawWaypoints:
             else:
                 points = np.concatenate((points, dubins_path.compute_points()), axis=0)
 
-        R = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
-        points = points @ R.T
+        # R = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
+        # points = points @ R.T
         return points
 
     def mod(self, x):

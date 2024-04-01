@@ -18,7 +18,7 @@ import parameters.simulation_parameters as SIM
 from models.mav_dynamics_sensors import MavDynamics
 from models.wind_simulation import WindSimulation
 from controllers.autopilot import Autopilot
-from estimators.observer_full import Observer
+# from estimators.observer_full import Observer
 #from estimators.observer import Observer
 from planners.path_follower import PathFollower
 from viewers.view_manager import ViewManager
@@ -29,7 +29,7 @@ wind = WindSimulation(SIM.ts_simulation, gust_flag=False, steady_state=np.array(
 
 mav = MavDynamics(SIM.ts_simulation)
 autopilot = Autopilot(SIM.ts_simulation)
-observer = Observer(SIM.ts_simulation)
+# observer = Observer(SIM.ts_simulation)
 path_follower = PathFollower()
 viewers = ViewManager(animation=True, data=True, path=True)
 #quitter = QuitListener()

@@ -19,7 +19,7 @@ import parameters.planner_parameters as PLAN
 from models.mav_dynamics_sensors import MavDynamics
 from models.wind_simulation import WindSimulation
 from controllers.autopilot import Autopilot
-from estimators.observer import Observer
+# from estimators.observer import Observer
 from planners.path_follower import PathFollower
 # from chap11.path_manager_cycle import PathManager
 from planners.path_manager import PathManager
@@ -29,18 +29,18 @@ from viewers.view_manager import ViewManager
 wind = WindSimulation(SIM.ts_simulation)
 mav = MavDynamics(SIM.ts_simulation)
 autopilot = Autopilot(SIM.ts_simulation)
-observer = Observer(SIM.ts_simulation)
+# observer = Observer(SIM.ts_simulation)
 path_follower = PathFollower()
 path_manager = PathManager()
-viewers = ViewManager(animation=True, data=False, waypoint=True)
+viewers = ViewManager(animation=True, data=False, path=True)
 #quitter = QuitListener()
 
 # waypoint definition
 from message_types.msg_waypoints import MsgWaypoints
 waypoints = MsgWaypoints()
-waypoints.type = 'straight_line'
-#waypoints.type = 'fillet'
-#waypoints.type = 'dubins'
+# waypoints.type = 'straight_line'
+# waypoints.type = 'fillet'
+waypoints.type = 'dubins'
 Va = PLAN.Va0
 waypoints.add(np.array([[0, 0, -100]]).T, Va, np.radians(0), np.inf, 0, 0)
 waypoints.add(np.array([[1000, 0, -100]]).T, Va, np.radians(45), np.inf, 0, 0)
@@ -56,8 +56,8 @@ print("Press 'Esc' to exit...")
 while sim_time < end_time:
     # -------observer-------------
     measurements = mav.sensors()  # get sensor measurements
-    estimated_state = observer.update(measurements)  # estimate states from measurements
-    # estimated_state = mav.true_state  # uses true states in the control
+    # estimated_state = observer.update(measurements)  # estimate states from measurements
+    estimated_state = mav.true_state  # uses true states in the control
 
     # -------path manager-------------
     path = path_manager.update(waypoints, PLAN.R_min, estimated_state)

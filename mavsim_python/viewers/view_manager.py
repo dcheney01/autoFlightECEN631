@@ -14,6 +14,8 @@ from message_types.msg_state import MsgState
 from message_types.msg_delta import MsgDelta
 from message_types.msg_sensors import MsgSensors
 from message_types.msg_path import MsgPath
+from viewers.mav_waypoint_viewer import MAVAndWaypointViewer
+from message_types.msg_waypoints import MsgWaypoints
 
 class ViewManager:
     def __init__(self, 
@@ -42,7 +44,8 @@ class ViewManager:
             self.app = pg.QtWidgets.QApplication([]) 
             if self.animation_flag:
                 if self.path_flag:
-                    self.mav_view = MavAndPathViewer(app=self.app)
+                    # self.mav_view = MavAndPathViewer(app=self.app)
+                    self.mav_view = MAVAndWaypointViewer(app=self.app)
                 else:
                     self.mav_view = MavViewer(app=self.app)  
             if self.data_plot_flag: 
@@ -67,10 +70,11 @@ class ViewManager:
                commanded_state: MsgState, 
                delta: MsgDelta,
                measurements: MsgSensors=None,
-               path: MsgPath=None):
+               path: MsgPath=None,
+               waypoints: MsgWaypoints=None):
         if self.animation_flag: 
             if self.path_flag is True:
-                self.mav_view.update(true_state, path)
+                self.mav_view.update(true_state, path, waypoints)
             else:
                 self.mav_view.update(true_state) 
         if self.data_plot_flag:
