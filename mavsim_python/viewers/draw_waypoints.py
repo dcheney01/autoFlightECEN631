@@ -64,8 +64,8 @@ class DrawWaypoints:
             else:
                 points = np.concatenate((points, dubins_path.compute_points()), axis=0)
 
-        # R = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
-        # points = points @ R.T
+        R = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
+        points = points @ R.T
         return points
 
     def mod(self, x):

@@ -49,7 +49,7 @@ waypoints.add(np.array([[1000, 1000, -100]]).T, Va, np.radians(-135), np.inf, 0,
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 200
+end_time = 500
 
 # main simulation loop
 print("Press 'Esc' to exit...")
