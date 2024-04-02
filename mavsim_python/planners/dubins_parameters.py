@@ -85,10 +85,10 @@ class DubinsParameters:
             print('Error in Dubins Parameters: The distance between nodes must be larger than 2R.')
         else:
             # compute start and end circles
-            crs = ps.reshape((3,1)) + R * rotz(np.pi / 2) @ np.array([[np.cos(chis)], [np.sin(chis)], [0]])
-            cls = ps.reshape((3,1)) + R * rotz(-np.pi / 2) @ np.array([[np.cos(chis)], [np.sin(chis)], [0]])
-            cre = pe.reshape((3,1)) + R * rotz(np.pi / 2) @ np.array([[np.cos(chie)], [np.sin(chie)], [0]])
-            cle = pe.reshape((3,1)) + R * rotz(-np.pi / 2) @ np.array([[np.cos(chie)], [np.sin(chie)], [0]])
+            crs = ps.reshape((3,1)) + R * np.array([[np.cos(chis + np.pi/2)], [np.sin(chis + np.pi/2)], [0]])
+            cls = ps.reshape((3,1)) + R * np.array([[np.cos(chis - np.pi/2)], [np.sin(chis - np.pi/2)], [0]])
+            cre = pe.reshape((3,1)) + R * np.array([[np.cos(chie + np.pi/2)], [np.sin(chie + np.pi/2)], [0]])
+            cle = pe.reshape((3,1)) + R * np.array([[np.cos(chie - np.pi/2)], [np.sin(chie - np.pi/2)], [0]])
 
             # compute L1
             angle = np.arctan2(cre.item(1) - crs.item(1), cre.item(0) - crs.item(0))
@@ -122,14 +122,15 @@ class DubinsParameters:
             L = np.min([L1, L2, L3, L4])
             min_idx = np.argmin([L1, L2, L3, L4])
 
-            # e1 = np.array([[1], [0], [0]])
-            e1 = np.array([[np.cos(chie)], [np.sin(chie)], [0]])
+            e1 = np.array([[1], [0], [0]])
+            # e1 = np.array([[np.cos(chie)], [np.sin(chie)], [0]])
 
             if min_idx == 0:
                 cs = crs
                 lambda_s = 1
                 ce = cre
                 lambda_e = 1
+
                 q1 = (ce - cs) / np.linalg.norm(ce - cs)
                 z1 = cs + R * rotz(-np.pi/2) @ q1
                 z2 = ce + R * rotz(-np.pi/2) @ q1
@@ -141,6 +142,7 @@ class DubinsParameters:
                 angle = np.arctan2(ce.item(1) - cs.item(1), ce.item(0) - cs.item(0))
                 ell = np.linalg.norm(ce - cs)
                 angle_2 = angle - np.pi/2 + np.arcsin(2*R/ell)
+
                 q1 = rotz(angle_2 + np.pi/2) @ e1
                 z1 = cs + R * rotz(angle_2) @ e1
                 z2 = ce + R * rotz(angle_2 + np.pi) @ e1
@@ -149,9 +151,10 @@ class DubinsParameters:
                 lambda_s = -1
                 ce = cre
                 lambda_e = 1
-                angle = np.arctan2(ce.item(1) - cs.item(1), ce.item(0) - cs.item(0))
                 ell = np.linalg.norm(ce - cs)
+                angle = np.arctan2(ce.item(1) - cs.item(1), ce.item(0) - cs.item(0))
                 angle_2 = np.arccos(2*R/ell)
+
                 q1 = rotz(angle + angle_2 - np.pi/2) @ e1
                 z1 = cs + R * rotz(angle + angle_2) @ e1
                 z2 = ce + R * rotz(angle + angle_2 - np.pi) @ e1
@@ -169,11 +172,15 @@ class DubinsParameters:
             self.dir_s = lambda_s
             self.center_e = ce
             self.dir_e = lambda_e
+            self.z1 = z1
+            self.q1 = q1
+            self.z2 = z2
+            self.z3 = pe.reshape((3,1))
+            self.q3 = rotz(chie) @ e1
+
             self.r1 = z1
-            self.n1 = rotz(lambda_s * np.pi/2) @ q1
             self.r2 = z2
-            self.r3 = pe
-            self.n3 = rotz(chie) @ e1
+            self.r3 = self.z3
 
             # print(f"Length: {self.length}")
             # print(f"Center_s: {self.center_s}")

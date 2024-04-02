@@ -208,55 +208,57 @@ class PathManager:
             self._manager_state = 1
             self.manager_requests_waypoints = False
             waypoints.flag_waypoints_changed = False
-            self.dubins_path.update(waypoints.ned[:, self._ptr_previous], 
-                                    waypoints.course[self._ptr_previous],
-                                    waypoints.ned[:, self._ptr_current],
-                                    waypoints.course[self._ptr_current],
-                                    radius)
+            self._construct_dubins_circle_start(waypoints, radius)
         
-        if self._manager_state == 1:
-            self._construct_dubins_circle_start(waypoints, self.dubins_path)
-
+        if self._manager_state == 1: # Starting start circle
             if self._inHalfSpace(mav_pos):
+                self._halfspace_n = self.dubins_path.q1
+                self._halfspace_r = self.dubins_path.z1
+
                 self._manager_state = 2
                 self._path.plot_updated = False    
                 print(f'in half space finishing start circle')
 
-        if self._manager_state == 2:
-            self._halfspace_n = self.dubins_path.n1
-            self._halfspace_r = self.dubins_path.r1
+        if self._manager_state == 2: # Finishing Start Circle
             if self._inHalfSpace(mav_pos):
-                self._construct_dubins_line(waypoints, self.dubins_path)
+                self._path.line_origin = self.dubins_path.z1
+                self._path.line_direction = self.dubins_path.q1
+                self._path.airspeed = waypoints.airspeed[self._ptr_current]
+                self._path.type = 'line'     
+
+                self._halfspace_n = self.dubins_path.q1
+                self._halfspace_r = self.dubins_path.z2           
                 self._manager_state = 3
                 self._path.plot_updated = False    
-                print(f'in half space finishing straight line')
+                print(f'in half space finishing start circle')
 
         if self._manager_state == 3:
-            self._halfspace_n = self.dubins_path.n1
-            self._halfspace_r = self.dubins_path.r2
-            
             if self._inHalfSpace(mav_pos):
+                self._path.orbit_center = self.dubins_path.center_e
+                self._path.orbit_radius = self.dubins_path.radius
+                self._path.airspeed = waypoints.airspeed[self._ptr_current]
+                self._path.orbit_direction = 'CW' if self.dubins_path.dir_e == 1 else 'CCW'
+                self._path.type = "orbit"        
+
+                self._halfspace_n = -self.dubins_path.q3
+                self._halfspace_r = self.dubins_path.z3     
                 self._manager_state = 4
                 self._path.plot_updated = False    
-                self._construct_dubins_circle_end(waypoints, self.dubins_path)
                 print(f'in half space 3. Going to 4.')
 
         if self._manager_state == 4:
-            self._halfspace_n = -self.dubins_path.n3
-            self._halfspace_r = self.dubins_path.r3.reshape((3,1))
-
             if self._inHalfSpace(mav_pos):
+                self._halfspace_n = self.dubins_path.q3
+                self._halfspace_r = self.dubins_path.z3
                 self._manager_state = 5
                 self._path.plot_updated = False    
                 print(f'in half space 4. Going to 5')
 
         if self._manager_state == 5:
-            self._halfspace_n = self.dubins_path.n3
-            self._halfspace_r = self.dubins_path.r3.reshape((3,1))
-
             if self._inHalfSpace(mav_pos):
                 self._increment_pointers()
-                self.manager_requests_waypoints = True
+                self._construct_dubins_circle_start(waypoints, radius)
+                self._manager_state = 1
                 self._path.plot_updated = False    
                 print(f'in half space 5. Starting new dubins path. New pointers: {self._ptr_previous}, {self._ptr_current}, {self._ptr_next}')
 
@@ -359,41 +361,21 @@ class PathManager:
         self._path.orbit_direction = 'CW' if _lambda == 1 else 'CCW'
         self._path.type = 'orbit'
 
-    def _construct_dubins_circle_start(self, 
-                                       waypoints: MsgWaypoints, 
-                                       dubins_path: DubinsParameters):
-        ##### TODO #####
-        # update halfspace variables
-        self._halfspace_n = -self.dubins_path.n1
-        self._halfspace_r = self.dubins_path.r1
+    def _construct_dubins_circle_start(self, waypoints, radius):
+        self.dubins_path.update(waypoints.ned[:, self._ptr_previous], 
+                        waypoints.course[self._ptr_previous],
+                        waypoints.ned[:, self._ptr_current],
+                        waypoints.course[self._ptr_current],
+                        radius)
         
-        # Update path variables
-        self._path.orbit_center = dubins_path.center_s
-        self._path.orbit_radius = dubins_path.radius
-        self._path.airspeed = waypoints.airspeed[self._ptr_current]
-        self._path.orbit_direction = 'CW' if dubins_path.dir_s == 1 else 'CCW'
-        self._path.type = "orbit"
-
-    def _construct_dubins_line(self, 
-                               waypoints: MsgWaypoints, 
-                               dubins_path: DubinsParameters):
-        ##### TODO #####
-        # update halfspace variables
-        self._path.line_origin = self.dubins_path.r1.reshape((3,1))
-        self._path.line_direction = (self.dubins_path.r2 - self.dubins_path.r1) / np.linalg.norm(self.dubins_path.r2 - self.dubins_path.r1)
-        self._path.airspeed = waypoints.airspeed[self._ptr_current]
-        self._path.type = 'line'
-
-    def _construct_dubins_circle_end(self, 
-                                     waypoints: MsgWaypoints, 
-                                     dubins_path: DubinsParameters):
-        ##### TODO #####
+        self._halfspace_n = -self.dubins_path.q1
+        self._halfspace_r = self.dubins_path.z1
         
-        # Update path variables
-        self._path.orbit_center = dubins_path.center_e
-        self._path.orbit_radius = dubins_path.radius
+        # Starting circle path
+        self._path.orbit_center =  self.dubins_path.center_s
+        self._path.orbit_radius = self.dubins_path.radius
         self._path.airspeed = waypoints.airspeed[self._ptr_current]
-        self._path.orbit_direction = 'CW' if dubins_path.dir_e == 1 else 'CCW'
+        self._path.orbit_direction = 'CW' if self.dubins_path.dir_s == 1 else 'CCW'
         self._path.type = "orbit"
 
     def _inHalfSpace(self, 
