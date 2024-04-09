@@ -8,20 +8,30 @@ class RRTStraightLine:
 
     def update(self, start_pose, end_pose, Va, world_map, radius):
         tree = MsgWaypoints()
-        waypoints = MsgWaypoints()
-        waypoints_not_smoothed = MsgWaypoints()
         #tree.type = 'straight_line'
         tree.type = 'fillet'
 
         ###### TODO ######
         # add the start pose to the tree
+        tree.add(start_pose, Va, cost=0, parent=0, connect_to_goal=0)
         
-        # check to see if start_pose connects directly to end_pose
+        found_connecting_node = False
+        while not found_connecting_node:
+            # extend tree toward end_pose
+            self.extend_tree(tree, end_pose, Va, world_map)
+            print("tree.num_waypoints: ", tree.num_waypoints)
+
+            # check to see if start_pose connects directly to end_pose
+            if distance(tree.ned[-1], end_pose) < self.segment_length:
+                if not collision(tree.ned[-1], end_pose, world_map):
+                    tree.connect_to_goal[-1] = 1
+                    tree.add(end_pose, Va, np.inf, np.inf, np.inf, np.inf)
+                    found_connecting_node = True
         
         # find path with minimum cost to end_node
-        # waypoints_not_smooth = find_minimum_path()
-        # waypoints = smooth_path()
-        self.waypoints_not_smoothed = waypoints_not_smoothed
+        waypoints_not_smooth = find_minimum_path(tree, end_pose)
+        waypoints = smooth_path(waypoints_not_smooth, world_map)
+        self.waypoints_not_smoothed = waypoints_not_smooth
         self.tree = tree
         return waypoints
 
@@ -29,23 +39,38 @@ class RRTStraightLine:
         # extend tree by randomly selecting pose and extending tree toward that pose
         
         ###### TODO ######
-        flag = None
-        return flag
+        while True:
+            rand_pose = random_pose(world_map, end_pose[-1,0]).reshape((3,1))
+            # create new pose self.segment_length away from last pose in the tree
+            if distance(tree.ned[:, -1], rand_pose) > self.segment_length:
+                vector_to_rand_pose = rand_pose - tree.ned[:, -1]
+                rand_pose = tree.ned[:, -1] + self.segment_length * vector_to_rand_pose / distance(tree.ned[:, -1], rand_pose)
+
+            if not collision(tree.ned[:, -1].reshape((3,1)), rand_pose, world_map):
+                tree.add(rand_pose, Va, cost=distance(tree.ned[:, -1], end_pose), parent=tree.num_waypoints-1, connect_to_goal=0)
+                return
         
     def process_app(self):
         self.planner_viewer.process_app()
 
 def smooth_path(waypoints, world_map):
 
-    ##### TODO #####
-    # smooth the waypoint path
-    smooth = [0]  # add the first waypoint
-    
+    ##### TODO ####
     # construct smooth waypoint path
     smooth_waypoints = MsgWaypoints()
+    smooth = [0]  # add the first waypoint
+    j = 1
+    i = 0
+
+    while j < len(waypoints):
+        w_s = smooth[i]
+        w_plus = waypoints[j]
+
+        if not collision(smooth[-1], waypoints[j], world_map):
+            smooth.append(waypoints[j])
+        j += 1
 
     return smooth_waypoints
-
 
 def find_minimum_path(tree, end_pose):
     # find the lowest cost path to the end node
@@ -81,20 +106,17 @@ def find_minimum_path(tree, end_pose):
     waypoints.type = tree.type
     return waypoints
 
-
 def random_pose(world_map, pd):
     # generate a random pose
     pn = world_map.city_width * np.random.rand()
     pe = world_map.city_width * np.random.rand()
-    pose = np.array([[pn], [pe], [pd]])
+    pose = np.array([pn, pe, pd])
     return pose
-
 
 def distance(start_pose, end_pose):
     # compute distance between start and end pose
     d = np.linalg.norm(start_pose - end_pose)
     return d
-
 
 def collision(start_pose, end_pose, world_map):
     # check to see of path from start_pose to end_pose colliding with map
@@ -104,7 +126,6 @@ def collision(start_pose, end_pose, world_map):
         if height_above_ground(world_map, column(points, i)) <= 0:
             collision_flag = True
     return collision_flag
-
 
 def height_above_ground(world_map, point):
     # find the altitude of point above ground level
@@ -133,7 +154,6 @@ def points_along_path(start_pose, end_pose, N):
         w = w + (L / N) * q
         points = np.append(points, w, axis=1)
     return points
-
 
 def column(A, i):
     # extracts the ith column of A and return column vector

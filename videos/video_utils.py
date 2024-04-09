@@ -73,10 +73,10 @@ def combine_video_list(video_paths, output_name):
 
 
 if __name__=="__main__":
-    video_names = ["Airspeed_Altitude_Control", "Course_Control", "Full_Control"]
-    video_folder = "videos/chp6/"
+    video_names = ["StraightLineManager", "FilletManager", "DubinsManager"]
+    video_folder = "videos/chp11/"
     
-    extension = ".avi"
+    extension = ".mp4"
     
     # First add text to all videos (based on video name)
     for video in video_names:

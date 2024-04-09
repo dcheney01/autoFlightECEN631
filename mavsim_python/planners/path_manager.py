@@ -126,7 +126,6 @@ class PathManager:
         # waypoints.__, radius
 
         if self.manager_requests_waypoints or waypoints.flag_waypoints_changed:
-            print("Requesting new waypoints")
             self.manager_requests_waypoints = False
             waypoints.flag_waypoints_changed = False
             self._num_waypoints = waypoints.num_waypoints
@@ -137,7 +136,6 @@ class PathManager:
             # waypoints.flag_waypoints_changed = True
             # waypoints.plot_updated = False
             self._path.plot_updated = False
-            print(f'in half space. New pointers: {self._ptr_previous}, {self._ptr_current}, {self._ptr_next}')
         
         self._construct_line(waypoints)
 
@@ -160,7 +158,6 @@ class PathManager:
         # self.manager_requests_waypoints, waypoints.__, radius
 
         if self.manager_requests_waypoints or waypoints.flag_waypoints_changed:
-            print("Requesting new waypoints")
             self._num_waypoints = waypoints.num_waypoints
             self._initialize_pointers()
             self._manager_state = 1
@@ -173,7 +170,6 @@ class PathManager:
             if self._inHalfSpace(mav_pos):
                 self._manager_state = 2
                 self._path.plot_updated = False    
-                print(f'in half space finishing straight line')
 
 
         if self._manager_state == 2:
@@ -183,7 +179,6 @@ class PathManager:
                 self._increment_pointers()
                 self._manager_state = 1
                 self._path.plot_updated = False    
-                print(f'in half space. New pointers: {self._ptr_previous}, {self._ptr_current}, {self._ptr_next}')
 
     def _dubins_manager(self,  
                         waypoints: MsgWaypoints, 
@@ -202,7 +197,6 @@ class PathManager:
         # waypoints.__, radius
 
         if self.manager_requests_waypoints or waypoints.flag_waypoints_changed:
-            print("Requesting new waypoints")
             self._num_waypoints = waypoints.num_waypoints
             self._initialize_pointers()
             self._manager_state = 1
@@ -217,7 +211,6 @@ class PathManager:
 
                 self._manager_state = 2
                 self._path.plot_updated = False    
-                print(f'in half space finishing start circle')
 
         if self._manager_state == 2: # Finishing Start Circle
             if self._inHalfSpace(mav_pos):
@@ -230,7 +223,6 @@ class PathManager:
                 self._halfspace_r = self.dubins_path.z2           
                 self._manager_state = 3
                 self._path.plot_updated = False    
-                print(f'in half space finishing start circle')
 
         if self._manager_state == 3:
             if self._inHalfSpace(mav_pos):
@@ -244,7 +236,6 @@ class PathManager:
                 self._halfspace_r = self.dubins_path.z3     
                 self._manager_state = 4
                 self._path.plot_updated = False    
-                print(f'in half space 3. Going to 4.')
 
         if self._manager_state == 4:
             if self._inHalfSpace(mav_pos):
@@ -252,7 +243,6 @@ class PathManager:
                 self._halfspace_r = self.dubins_path.z3
                 self._manager_state = 5
                 self._path.plot_updated = False    
-                print(f'in half space 4. Going to 5')
 
         if self._manager_state == 5:
             if self._inHalfSpace(mav_pos):
@@ -260,7 +250,6 @@ class PathManager:
                 self._construct_dubins_circle_start(waypoints, radius)
                 self._manager_state = 1
                 self._path.plot_updated = False    
-                print(f'in half space 5. Starting new dubins path. New pointers: {self._ptr_previous}, {self._ptr_current}, {self._ptr_next}')
 
 
     def _initialize_pointers(self):
@@ -381,7 +370,6 @@ class PathManager:
     def _inHalfSpace(self, 
                      pos: np.ndarray)->bool:
         '''Is pos in the half space defined by r and n?'''
-        print( (pos-self._halfspace_r).T @ self._halfspace_n)
         if (pos-self._halfspace_r).T @ self._halfspace_n >= 0.0:
             return True
         else:

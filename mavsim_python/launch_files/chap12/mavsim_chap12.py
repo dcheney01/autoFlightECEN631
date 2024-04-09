@@ -18,7 +18,7 @@ import parameters.planner_parameters as PLAN
 from models.mav_dynamics_sensors import MavDynamics
 from models.wind_simulation import WindSimulation
 from controllers.autopilot import Autopilot
-from estimators.observer import Observer
+# from estimators.observer import Observer
 from planners.path_follower import PathFollower
 from planners.path_manager import PathManager
 from planners.path_planner import PathPlanner
@@ -30,13 +30,13 @@ from message_types.msg_world_map import MsgWorldMap
 mav = MavDynamics(SIM.ts_simulation)
 wind = WindSimulation(SIM.ts_simulation)
 autopilot = Autopilot(SIM.ts_simulation)
-observer = Observer(SIM.ts_simulation)
+# observer = Observer(SIM.ts_simulation)
 path_follower = PathFollower()
 path_manager = PathManager()
-#planner_type = 'simple_straight'  # return simple waypoint path
+# planner_type = 'simple_straight'  # return simple waypoint path
 #planner_type = 'simple_dubins'  # return simple dubins waypoint path
-#planner_type = 'rrt_straight'  # plan path through city using straight-line RRT
-planner_type = 'rrt_dubins'  # plan path through city using dubins RRT
+planner_type = 'rrt_straight'  # plan path through city using straight-line RRT
+# planner_type = 'rrt_dubins'  # plan path through city using dubins RRT
 path_planner = PathPlanner(type=planner_type)
 viewers = ViewManager(animation=True, data=False, planning=True, map=True,
                       video=False, video_name='chap12.mp4')
@@ -51,8 +51,8 @@ print("Press 'Esc' to exit...")
 while sim_time < SIM.end_time:
     # -------observer-------------
     measurements = mav.sensors()  # get sensor measurements
-    estimated_state = observer.update(measurements)  # estimate states from measurements
-    #estimated_state = mav.true_state
+    # estimated_state = observer.update(measurements)  # estimate states from measurements
+    estimated_state = mav.true_state
 
     # -------path planner - ----
     if path_manager.manager_requests_waypoints is True:
