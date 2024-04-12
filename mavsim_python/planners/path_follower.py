@@ -50,7 +50,19 @@ class PathFollower:
         self.autopilot_commands.course_command = chi_q - self.chi_inf * 2 / np.pi * np.arctan(self.k_path * ep_y)
 
         # altitude command
-        self.autopilot_commands.altitude_command = -rd - np.sqrt(s[0]**2 + s[1]**2) * (qd / np.sqrt(qn**2 + qe**2))
+        if path.line_end is not None:
+            # find where along the path the mav is closest to
+            # the line connecting the start and end of the path
+            if np.linalg.norm(path.line_end - path.line_origin) > 1e-6:
+                qn_end = path.line_end[0,0] - path.line_origin[0,0]
+                qe_end = path.line_end[1,0] - path.line_origin[1,0]
+                qd_end = path.line_end[2,0] - path.line_origin[2,0]
+                d = np.array([[qn_end, qe_end, qd_end]]).T
+                u = np.array([[qn, qe, qd]]).T
+                w = u - d * (u.T @ d) / (np.linalg.norm(d)**2)
+                s = (e - w)[:,0]
+
+        self.autopilot_commands.altitude_command = -rd - (np.sqrt(s[0]**2 + s[1]**2) * (qd / np.sqrt(qn**2 + qe**2)))
 
         # feedforward roll angle for straight line is zero
         self.autopilot_commands.phi_feedforward = 0

@@ -93,19 +93,28 @@ class PathManager:
                waypoints: MsgWaypoints, 
                radius: float, 
                state: MsgState) -> MsgPath:
+
+        if self._ptr_current > waypoints.num_waypoints - 1:
+            return None
+
         if waypoints.num_waypoints == 0:
             self.manager_requests_waypoints = True
         if self.manager_requests_waypoints is True \
                 and waypoints.flag_waypoints_changed is True:
             self.manager_requests_waypoints = False
-        if waypoints.type == 'straight_line':
-            self._line_manager(waypoints, state)
+        if waypoints.type == 'straight_line' or waypoints.type == 'landing':
+            flag = self._line_manager(waypoints, state)
+            if flag == False:
+                return None
         elif waypoints.type == 'fillet':
-            self._fillet_manager(waypoints, radius, state)
+            flag = self._fillet_manager(waypoints, radius, state)
+            if flag == False:
+                return None
         elif waypoints.type == 'dubins':
             self._dubins_manager(waypoints, radius, state)
         else:
             print('Error in Path Manager: Undefined waypoint type.')
+        
         return self._path
 
     def _line_manager(self,  
@@ -137,7 +146,10 @@ class PathManager:
             # waypoints.plot_updated = False
             self._path.plot_updated = False
         
+        if self._ptr_current > waypoints.num_waypoints - 1:
+            return False
         self._construct_line(waypoints)
+        return True
 
     def _fillet_manager(self,  
                         waypoints: MsgWaypoints, 
@@ -171,10 +183,10 @@ class PathManager:
                 self._manager_state = 2
                 self._path.plot_updated = False    
 
-
         if self._manager_state == 2:
-            self._construct_fillet_circle(waypoints, radius)
-
+            flag = self._construct_fillet_circle(waypoints, radius)
+            if flag == False:
+                return False
             if self._inHalfSpace(mav_pos):
                 self._increment_pointers()
                 self._manager_state = 1
@@ -254,10 +266,10 @@ class PathManager:
 
     def _initialize_pointers(self):
         if self._num_waypoints >= 3:
-            ##### TODO #####
+            #### TODO #####
             self._ptr_previous = 0
             self._ptr_current = 1
-            self._ptr_next = 2
+            self._ptr_next = 2 if self._num_waypoints > 2 else 9999
         else:
             print('Error Path Manager: need at least three waypoints')
 
@@ -288,7 +300,10 @@ class PathManager:
         if self._ptr_next == 9999:
             next = current.reshape((3,1)) + 100*self._path.line_direction
         else:
-            next = waypoints.ned[:, self._ptr_next].reshape((3,1))
+            if self._ptr_next > self._num_waypoints - 1:
+                next = current
+            else:
+                next = waypoints.ned[:, self._ptr_next].reshape((3,1))
         q_current = (next - current) / np.linalg.norm(next - current)
         self._halfspace_r = current
         self._halfspace_n = (q_prev + q_current) / (2 * np.linalg.norm((q_prev + q_current) / 2))
@@ -308,8 +323,9 @@ class PathManager:
         self._path.airspeed = waypoints.airspeed[self._ptr_current]
         self._path.type = 'line'
 
-        if self._ptr_next == 9999:
-            next = current.reshape((3,1)) + 100*self._path.line_direction
+        if self._ptr_next > waypoints.num_waypoints - 1:
+            # next = current.reshape((3,1))
+            return
         else:
             next = waypoints.ned[:, self._ptr_next].reshape((3,1))
 
@@ -327,13 +343,20 @@ class PathManager:
         previous = waypoints.ned[:, self._ptr_previous].reshape((3,1))
         ##### TODO #####
         current = waypoints.ned[:, self._ptr_current].reshape((3,1))
+        if self._ptr_next > waypoints.num_waypoints - 1:
+            return False
         next = waypoints.ned[:, self._ptr_next].reshape((3,1))
 
         q_prev = (current - previous) / np.linalg.norm(current - previous)
         q_current = (next - current) / np.linalg.norm(next - current)
 
-        q_prev_term = (q_prev - q_current) / np.linalg.norm(q_prev - q_current)
-        angle_between_lines = np.arccos(-q_prev.T @ q_current)
+        if (q_prev == q_current).all():
+            # angle_between_lines = np.pi
+            # q_prev_term = 1
+            return False
+        else:
+            q_prev_term = (q_prev - q_current) / np.linalg.norm(q_prev - q_current)
+            angle_between_lines = np.arccos(-q_prev.T @ q_current)
         c = current - (radius / np.sin(angle_between_lines/2)) * q_prev_term
         
         _lambda = np.sign(q_prev[0]*q_current[1] - q_prev[1]*q_current[0])
@@ -349,6 +372,7 @@ class PathManager:
         self._path.airspeed = waypoints.airspeed[self._ptr_current]
         self._path.orbit_direction = 'CW' if _lambda == 1 else 'CCW'
         self._path.type = 'orbit'
+        return True
 
     def _construct_dubins_circle_start(self, waypoints, radius):
         self.dubins_path.update(waypoints.ned[:, self._ptr_previous], 

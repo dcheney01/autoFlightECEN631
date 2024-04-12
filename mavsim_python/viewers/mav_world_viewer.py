@@ -10,7 +10,10 @@ from viewers.draw_mav import DrawMav
 from viewers.draw_path import DrawPath
 from viewers.draw_waypoints import DrawWaypoints
 from viewers.draw_map import DrawMap
+from viewers.draw_runway import DrawRunway
 import pyqtgraph.opengl as gl
+from time import time
+
 
 
 class MAVWorldViewer:
@@ -38,21 +41,31 @@ class MAVWorldViewer:
         self.path_plot = []
         self.waypoint_plot = []
         self.map_plot = []
+        self.ts_refresh = 1/30
+        self.t = time()
+        self.t_next = self.t
 
-    def update(self, state, path, waypoints, map):
+    def update(self, state, path, waypoints, map, runway=None):
         blue = np.array([[30, 144, 255, 255]])/255.
         red = np.array([[1., 0., 0., 1]])
         # initialize the drawing the first time update() is called
         if not self.plot_initialized:
-            self.map_plot = DrawMap(map, self.window)
+            # self.map_plot = DrawMap(map, self.window)
             self.path_plot = DrawPath(path, red, self.window)
             self.waypoint_plot = DrawWaypoints(waypoints, path.orbit_radius, blue, self.window)
             self.mav_plot = DrawMav(state, self.window)
+            self.runway_plot = DrawRunway(self.window)
+            self.runway_plot.update(runway)
             self.plot_initialized = True
             path.plot_updated = True
             waypoints.plot_updated = True
         # else update drawing on all other calls to update()
         else:
+            t = time()
+            if t-self.t_next > 0.0:
+                self.mav_plot.update(state)
+                self.t = t
+                self.t_next = t + self.ts_refresh
             self.mav_plot.update(state)
             if not waypoints.plot_updated:
                 self.waypoint_plot.update(waypoints)
@@ -60,5 +73,8 @@ class MAVWorldViewer:
             if not path.plot_updated:
                 self.path_plot.update(path, red)
                 path.plot_updated = True
+            if runway is not None and runway.plot_updated is False:
+                self.runway_plot.update(runway)
+                runway.plot_updated = True
         # redraw
-        self.app.processEvents()
+        # self.app.processEvents()

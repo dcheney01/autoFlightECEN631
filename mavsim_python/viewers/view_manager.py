@@ -19,6 +19,7 @@ from message_types.msg_sensors import MsgSensors
 from message_types.msg_path import MsgPath
 from message_types.msg_waypoints import MsgWaypoints
 from message_types.msg_world_map import MsgWorldMap
+from message_types.msg_runway import MsgRunway
 class ViewManager:
     def __init__(self, 
                  video: bool=False, 
@@ -30,6 +31,7 @@ class ViewManager:
                  waypoint: bool=False,
                  planning: bool=False,
                  map: bool=False,
+                 runway: bool=False,
                  video_name: str=[]):
         self.video_flag = video
         self.data_plot_flag = data
@@ -39,6 +41,8 @@ class ViewManager:
         self.waypoint_flag = waypoint
         self.planning_flag = planning
         self.map_flag = map
+        self.runway_flag = runway
+
         self.save_plots_flag = save_plots
         # initialize video 
         if self.video_flag is True:
@@ -56,11 +60,11 @@ class ViewManager:
                     if self.planning_flag:
                         self.planner_viewer = PlannerViewer(app=self.app)
                 elif self.waypoint_flag:
-                    self.mav_view = MAVAndWaypointViewer(app=self.app)
+                    self.mav_view = MAVAndWaypointViewer(app=self.app, runway=self.runway_flag)
                 elif self.path_flag:
                     self.mav_view = MavAndPathViewer(app=self.app)
                 else:
-                    self.mav_view = MavViewer(app=self.app)  
+                    self.mav_view = MavViewer(app=self.app, runway=self.runway_flag)  
             if self.data_plot_flag: 
                 self.data_view = DataViewer(
                     app=self.app,
@@ -87,16 +91,17 @@ class ViewManager:
                measurements: MsgSensors=None,
                path: MsgPath=None,
                waypoints: MsgWaypoints=None,
+               runway: MsgRunway=None,
                map: MsgWorldMap=None):
         if self.animation_flag: 
             if self.map_flag is True:
-                self.mav_view.update(true_state, path, waypoints, map)
+                self.mav_view.update(true_state, path, waypoints, map, runway)
             elif self.waypoint_flag is True:
-                self.mav_view.update(true_state, path, waypoints)
+                self.mav_view.update(true_state, path, waypoints, runway)
             elif self.path_flag is True:
-                self.mav_view.update(true_state, path)
+                self.mav_view.update(true_state, path, runway)
             else:
-                self.mav_view.update(true_state) 
+                self.mav_view.update(true_state, runway) 
         if self.data_plot_flag:
             self.data_view.update(
                 true_state,  # true states
@@ -117,12 +122,23 @@ class ViewManager:
                tree: MsgWaypoints=None,
                radius: float=0.):
         if self.animation_flag and self.map_flag and self.planning_flag: 
-            self.planner_viewer.draw_tree_and_map(
-                map, 
-                tree, 
-                waypoints_not_smooth, 
-                waypoints,
-                radius)
+            if waypoints.type == "rrt_dubins":
+                self.planner_viewer.draw_tree_and_map(
+                    map, 
+                    tree, 
+                    waypoints_not_smooth, 
+                    waypoints,
+                    radius,
+                    )
+            else:
+                self.planner_viewer.draw_tree_and_map(
+                    map, 
+                    tree, 
+                    waypoints_not_smooth, 
+                    waypoints,
+                    radius,
+                    dubins_path=None
+                    )
 
     def close(self, dataplot_name: str=[], sensorplot_name: str=[]):
         # Save an Image of the Plot

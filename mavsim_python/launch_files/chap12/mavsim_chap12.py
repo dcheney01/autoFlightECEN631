@@ -35,8 +35,8 @@ path_follower = PathFollower()
 path_manager = PathManager()
 # planner_type = 'simple_straight'  # return simple waypoint path
 #planner_type = 'simple_dubins'  # return simple dubins waypoint path
-planner_type = 'rrt_straight'  # plan path through city using straight-line RRT
-# planner_type = 'rrt_dubins'  # plan path through city using dubins RRT
+# planner_type = 'rrt_straight'  # plan path through city using straight-line RRT
+planner_type = 'rrt_dubins'  # plan path through city using dubins RRT
 path_planner = PathPlanner(type=planner_type)
 viewers = ViewManager(animation=True, data=False, planning=True, map=True,
                       video=False, video_name='chap12.mp4')

@@ -15,23 +15,24 @@ class RRTStraightLine:
         # add the start pose to the tree
         tree.add(start_pose, Va, cost=0, parent=0, connect_to_goal=0)
         
-        found_connecting_node = False
-        while not found_connecting_node:
+        while True:
             # extend tree toward end_pose
             self.extend_tree(tree, end_pose, Va, world_map)
             print("tree.num_waypoints: ", tree.num_waypoints)
 
             # check to see if start_pose connects directly to end_pose
-            if distance(tree.ned[-1], end_pose) < self.segment_length:
-                if not collision(tree.ned[-1], end_pose, world_map):
+            if distance(tree.ned[:,-1].reshape((3,1)), end_pose) < self.segment_length:
+                if not collision(tree.ned[:,-1].reshape((3,1)), end_pose, world_map):
+                    print("******************* Connected to end_pose ********************")
                     tree.connect_to_goal[-1] = 1
-                    tree.add(end_pose, Va, np.inf, np.inf, np.inf, np.inf)
-                    found_connecting_node = True
-        
+                    break
+
         # find path with minimum cost to end_node
-        waypoints_not_smooth = find_minimum_path(tree, end_pose)
-        waypoints = smooth_path(waypoints_not_smooth, world_map)
-        self.waypoints_not_smoothed = waypoints_not_smooth
+        print(f"tree.num_waypoints: {tree.num_waypoints}")
+        self.waypoint_not_smooth = find_minimum_path(tree, end_pose)
+
+        print(f"waypoints_not_smoothed: {self.waypoint_not_smooth.num_waypoints}")
+        waypoints = smooth_path(self.waypoint_not_smooth, world_map)
         self.tree = tree
         return waypoints
 
@@ -39,15 +40,32 @@ class RRTStraightLine:
         # extend tree by randomly selecting pose and extending tree toward that pose
         
         ###### TODO ######
+        count = 0
         while True:
+            count += 1
+            print("count: ", count)
             rand_pose = random_pose(world_map, end_pose[-1,0]).reshape((3,1))
-            # create new pose self.segment_length away from last pose in the tree
-            if distance(tree.ned[:, -1], rand_pose) > self.segment_length:
-                vector_to_rand_pose = rand_pose - tree.ned[:, -1]
-                rand_pose = tree.ned[:, -1] + self.segment_length * vector_to_rand_pose / distance(tree.ned[:, -1], rand_pose)
 
-            if not collision(tree.ned[:, -1].reshape((3,1)), rand_pose, world_map):
-                tree.add(rand_pose, Va, cost=distance(tree.ned[:, -1], end_pose), parent=tree.num_waypoints-1, connect_to_goal=0)
+            # find node closest to rand_pose
+            closest_node = 0
+            min_distance = np.inf
+            for i in range(tree.num_waypoints):
+                d = distance(tree.ned[:, i].reshape((3,1)), rand_pose)
+                if d < min_distance:
+                    min_distance = d
+                    closest_node = i
+
+            # create new pose that is segment_length away from closest_node towards the random pose
+            if min_distance > self.segment_length:
+                vector_to_rand_pose = rand_pose - tree.ned[:, closest_node].reshape((3,1))
+                rand_pose = tree.ned[:, closest_node].reshape((3,1)) + self.segment_length * vector_to_rand_pose / min_distance
+
+            # check to see if path from closest_node to rand_pose is collision free
+            if not collision(tree.ned[:, closest_node].reshape((3,1)), rand_pose, world_map):
+                tree.add(rand_pose, Va,
+                         course=np.arctan2(rand_pose[1]-tree.ned[1, closest_node], rand_pose[0]-tree.ned[0, closest_node]),
+                         cost=distance(rand_pose.reshape((3,1)), end_pose), 
+                         parent=closest_node, connect_to_goal=0)
                 return
         
     def process_app(self):
@@ -58,18 +76,29 @@ def smooth_path(waypoints, world_map):
     ##### TODO ####
     # construct smooth waypoint path
     smooth_waypoints = MsgWaypoints()
-    smooth = [0]  # add the first waypoint
-    j = 1
-    i = 0
+    smooth_waypoints.add(waypoints.ned[:, 0].reshape((3,1)), waypoints.airspeed[0],
+                            course=0, cost=0, parent=0, connect_to_goal=0)
+    next_node_pointer_j = 1
+    curr_node_pointer_i = 0
 
-    while j < len(waypoints):
-        w_s = smooth[i]
-        w_plus = waypoints[j]
+    while next_node_pointer_j < waypoints.num_waypoints-1:
+        w_s = waypoints.ned[:, curr_node_pointer_i].reshape((3,1))
+        w_plus = waypoints.ned[:, next_node_pointer_j+1].reshape((3,1))
 
-        if not collision(smooth[-1], waypoints[j], world_map):
-            smooth.append(waypoints[j])
-        j += 1
+        if collision(w_s, w_plus, world_map):
+            w = waypoints.ned[:, next_node_pointer_j].reshape((3,1))
+            angle_between_waypoints = np.arctan2(w[1]-w_s[1], w[0]-w_s[0])
+            smooth_waypoints.add(w, waypoints.airspeed[next_node_pointer_j], 
+                                 course=angle_between_waypoints,
+                                    cost=distance(w_s, w), 
+                                    parent=curr_node_pointer_i,
+                                    connect_to_goal=0)
+            curr_node_pointer_i = next_node_pointer_j
 
+        next_node_pointer_j += 1
+
+    smooth_waypoints.add(waypoints.ned[:, -1].reshape((3,1)), waypoints.airspeed[-1],
+                            course=0, cost=0, parent=0, connect_to_goal=1)
     return smooth_waypoints
 
 def find_minimum_path(tree, end_pose):
@@ -93,10 +122,10 @@ def find_minimum_path(tree, end_pose):
     for i in path:
         waypoints.add(column(tree.ned, i),
                       tree.airspeed.item(i),
-                      np.inf,
-                      np.inf,
-                      np.inf,
-                      np.inf)
+                      course=np.arctan2(tree.ned[1, i]-tree.ned[1, int(tree.parent.item(i))], tree.ned[0, i]-tree.ned[0, int(tree.parent.item(i))]),
+                      cost=tree.cost.item(i),
+                      parent=tree.parent.item(i),
+                      connect_to_goal=tree.connect_to_goal.item(i))
     waypoints.add(end_pose,
                   tree.airspeed[-1],
                   np.inf,

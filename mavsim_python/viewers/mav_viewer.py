@@ -11,11 +11,13 @@ mavsim_python: mav viewer (for chapter 2)
 import pyqtgraph.opengl as gl
 import pyqtgraph.Vector as Vector
 from viewers.draw_mav import DrawMav
+from viewers.draw_runway import DrawRunway
 # from viewers.draw_mav_stl import DrawMav
 from time import time
 
 class MavViewer():
-    def __init__(self, app, ts_refresh=1./30.):
+    def __init__(self, app, ts_refresh=1./30., runway=False):
+        self.runway_flag = runway
         self.scale = 100
         # initialize Qt gui application and window
         self.app = app  # initialize QT, external so that only one QT process is running
@@ -43,10 +45,14 @@ class MavViewer():
         self.t = time()
         self.t_next = self.t       
 
-    def update(self, state):
+    def update(self, state, runway):
         # initialize the drawing the first time update() is called
         if not self.plot_initialized:
             self.mav_plot = DrawMav(state, self.window)
+            if self.runway_flag:
+                self.runway_plot = DrawRunway(self.window)
+                self.runway_plot.update(runway)
+                runway.plot_updated = True
             self.plot_initialized = True
         # else update drawing on all other calls to update()
         else:
@@ -55,6 +61,10 @@ class MavViewer():
                 self.mav_plot.update(state)
                 self.t = t
                 self.t_next = t + self.ts_refresh
+            if not runway.plot_updated:
+                self.runway_plot.update(runway)
+                runway.plot_updated = True
+
         # update the center of the camera view to the mav location
         view_location = Vector(state.east, state.north, state.altitude)  # defined in ENU coordinates
         self.window.opts['center'] = view_location

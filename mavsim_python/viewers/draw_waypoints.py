@@ -37,7 +37,7 @@ class DrawWaypoints:
         window.addItem(self.waypoint_plot_object)
 
     def update(self, waypoints):
-        if waypoints.type=='straight_line' or waypoints.type=='fillet':
+        if waypoints.type=='straight_line' or waypoints.type=='fillet' or waypoints.type=='landing':
             points = self.straight_waypoint_points(waypoints)
         elif waypoints.type=='dubins':
             points = self.dubins_points(waypoints, self.radius, 0.1)

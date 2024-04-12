@@ -33,3 +33,7 @@ class MsgWorldMap:
             self.building_north[0, i] = 0.5 * (PLAN.city_width / PLAN.num_blocks) * (2 * i + 1)
         # east coordinate of center of buildings
         self.building_east = np.copy(self.building_north)
+
+    def set_to_empty_map(self):
+        self.building_height = np.zeros((PLAN.num_blocks, PLAN.num_blocks))
+        self.flag_map_changed = 1

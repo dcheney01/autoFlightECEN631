@@ -73,8 +73,8 @@ def combine_video_list(video_paths, output_name):
 
 
 if __name__=="__main__":
-    video_names = ["StraightLineManager", "FilletManager", "DubinsManager"]
-    video_folder = "videos/chp11/"
+    video_names = ["StraightLineRRT", "DubinsRRT"]
+    video_folder = "videos/chp12/"
     
     extension = ".mp4"
     

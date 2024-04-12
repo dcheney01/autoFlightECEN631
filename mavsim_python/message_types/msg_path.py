@@ -33,6 +33,7 @@ class MsgPath:
         self.line_origin = np.array([[0.0, 0.0, 0.0]]).T
         # direction of line -unit vector- (q)
         self.line_direction = np.array([[1.0, 0.0, 0.0]]).T
+        self.line_end = None
         # center of the orbit (c)
         self.orbit_center = np.array([[0.0, 0.0, 0.0]]).T
         # radius of the orbit (rho)
